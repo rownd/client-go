@@ -4,7 +4,7 @@ import (
     "fmt"
     "log"
     
-    "github.com/your-username/rownd-go"
+    "github.com/rgthelen/rownd-go-test/pkg/rownd"
 )
 
 func main() {

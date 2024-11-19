@@ -6,7 +6,7 @@ import (
     "net/http"
     "encoding/json"
     
-    "github.com/rownd/go-sdk/pkg/rownd/testing"
+    "github.com/rgthelen/rownd-go-test/pkg/rownd/testing"
 )
 
 var testConfig = &Config{

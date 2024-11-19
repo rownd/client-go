@@ -5,7 +5,7 @@ Use this library to integrate Rownd into your Go application. The SDK provides c
 ## Installation
 
 ```bash
-go get github.com/rownd/go-sdk
+go get github.com/rgthelen/rownd-go-test
 ```
 
 ## Usage
@@ -16,7 +16,7 @@ Here's a basic usage example:
 package main
 import (
 "fmt"
-"github.com/rownd/go-sdk/pkg/rownd"
+"github.com/rgthelen/rownd-go-test/pkg/rownd"
 )
 func main() {
 client := rownd.NewClient(&rownd.Config{

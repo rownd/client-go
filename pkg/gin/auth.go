@@ -2,7 +2,7 @@ package gin
 
 import (
     "github.com/gin-gonic/gin"
-    "github.com/rownd/go-sdk/pkg/rownd"
+    "github.com/rgthelen/rownd-go-test/pkg/rownd"
 )
 
 type AuthOptions struct {
