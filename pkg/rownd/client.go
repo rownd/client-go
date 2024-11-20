@@ -3,6 +3,7 @@ package rownd
 import (
     "net/http"
     "time"
+    "github.com/patrickmn/go-cache"
 )
 
 type Client struct {
@@ -11,6 +12,7 @@ type Client struct {
     BaseURL     string
     HTTPClient  *http.Client
     config      *ClientConfig
+    cache       *cache.Cache
 }
 
 // NewClient creates a new Rownd client instance
@@ -19,24 +21,13 @@ func NewClient(config *ClientConfig) (*Client, error) {
         return nil, err
     }
 
-    baseURL := config.BaseURL
-    if baseURL == "" {
-        baseURL = "https://api.rownd.io"
-    }
-
-    timeout := config.Timeout
-    if timeout == 0 {
-        timeout = 30 * time.Second
-    }
-
     return &Client{
         AppKey:     config.AppKey,
         AppSecret:  config.AppSecret,
-        BaseURL:    baseURL,
-        HTTPClient: &http.Client{
-            Timeout: timeout,
-        },
-        config: config,
+        BaseURL:    defaultString(config.BaseURL, "https://api.rownd.io"),
+        HTTPClient: &http.Client{Timeout: defaultDuration(config.Timeout, 30*time.Second)},
+        config:     config,
+        cache:      cache.New(cache.NoExpiration, 10*time.Minute),
     }, nil
 }
 
