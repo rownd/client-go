@@ -22,12 +22,20 @@ func (c *Client) GetUser(userID string) (*User, error) {
     }
     defer resp.Body.Close()
 
-    var user User
-    if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+    // Parse the API response structure
+    var apiResponse struct {
+        Data *User `json:"data"`
+    }
+    
+    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
         return nil, err
     }
 
-    return &user, nil
+    if apiResponse.Data == nil {
+        return nil, fmt.Errorf("no user data found")
+    }
+
+    return apiResponse.Data, nil
 }
 
 func (c *Client) UpdateUser(userID string, data map[string]interface{}) (*User, error) {
