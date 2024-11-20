@@ -12,10 +12,23 @@ import (
 func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenValidationResponse) (*User, error) {
     // Get app ID from token claims
     var appID string
-    if tokenInfo != nil {
-        if aud, ok := tokenInfo.DecodedToken["aud"].([]string); ok && len(aud) > 0 {
-            if strings.HasPrefix(aud[0], "app:") {
-                appID = aud[0][4:]
+    if tokenInfo != nil && tokenInfo.DecodedToken != nil {
+        if aud, exists := tokenInfo.DecodedToken["aud"]; exists {
+            switch v := aud.(type) {
+            case []interface{}:
+                if len(v) > 0 {
+                    if audStr, ok := v[0].(string); ok && strings.HasPrefix(audStr, "app:") {
+                        appID = audStr[4:]
+                    }
+                }
+            case []string:
+                if len(v) > 0 && strings.HasPrefix(v[0], "app:") {
+                    appID = v[0][4:]
+                }
+            case string:
+                if strings.HasPrefix(v, "app:") {
+                    appID = v[4:]
+                }
             }
         }
     }
