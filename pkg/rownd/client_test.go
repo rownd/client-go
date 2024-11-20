@@ -5,6 +5,7 @@ import (
     "net/http/httptest"
     "net/http"
     "encoding/json"
+    "context"
 )
 
 var testConfig = &Config{
@@ -37,13 +38,16 @@ func TestClient(t *testing.T) {
     testConfig.APIUrl = server.URL
     client := NewClient(testConfig)
 
+    // Create context for tests
+    ctx := context.Background()
+
     t.Run("validate token", func(t *testing.T) {
         token, err := testing.GenerateTestToken()
         if err != nil {
             t.Fatalf("Failed to generate test token: %v", err)
         }
 
-        tokenInfo, err := client.ValidateToken(token)
+        tokenInfo, err := client.ValidateToken(ctx, token)
         if err != nil {
             t.Fatalf("Failed to validate token: %v", err)
         }
@@ -54,7 +58,7 @@ func TestClient(t *testing.T) {
     })
 
     t.Run("fetch user info", func(t *testing.T) {
-        user, err := client.GetUser("rownd-test-user-1")
+        user, err := client.GetUser(ctx, "rownd-test-user-1")
         if err != nil {
             t.Fatalf("Failed to fetch user: %v", err)
         }

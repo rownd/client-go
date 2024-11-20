@@ -37,7 +37,7 @@ func Authenticate(client *rownd.Client, opts AuthOptions) gin.HandlerFunc {
 
         // Fetch user info if requested
         if opts.FetchUserInfo {
-            user, err := client.GetUser(tokenInfo.UserID)
+            user, err := client.GetUser(c.Request.Context(), tokenInfo.UserID)
             if err != nil {
                 if opts.ErrOnMissingUser {
                     c.AbortWithStatusJSON(404, gin.H{"error": "User not found"})
