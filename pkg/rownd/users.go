@@ -7,7 +7,6 @@ import (
     "net/http"
     "context"
     "strings"
-    "github.com/golang-jwt/jwt/v5"
 )
 
 func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenValidationResponse) (*User, error) {
