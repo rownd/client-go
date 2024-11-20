@@ -1,12 +1,14 @@
 package rownd
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 	
 	"github.com/golang-jwt/jwt/v5"
@@ -124,4 +126,81 @@ func (c *Client) fetchJWKS(ctx context.Context, jwksUri string) (*JWKS, error) {
 	c.cache.Set("jwks", &jwks, time.Hour)
 
 	return &jwks, nil
+}
+
+func (c *Client) InitiateAuth(ctx context.Context, req *AuthInitRequest) (*AuthInitResponse, error) {
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, NewError(ErrValidation, "failed to marshal request", err)
+	}
+
+	apiReq, err := http.NewRequestWithContext(ctx, "POST",
+		fmt.Sprintf("%s/hub/auth/init", c.BaseURL),
+		bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, NewError(ErrAPI, "failed to create request", err)
+	}
+
+	apiReq.Header.Set("Content-Type", "application/json")
+	apiReq.Header.Set("X-Rownd-App-Key", c.AppKey)
+
+	resp, err := c.HTTPClient.Do(apiReq)
+	if err != nil {
+		return nil, NewError(ErrNetwork, "request failed", err)
+	}
+	defer resp.Body.Close()
+
+	var initResp AuthInitResponse
+	if err := json.NewDecoder(resp.Body).Decode(&initResp); err != nil {
+		return nil, NewError(ErrAPI, "failed to decode response", err)
+	}
+
+	return &initResp, nil
+}
+
+func (c *Client) CompleteAuth(ctx context.Context, req *AuthCompleteRequest) (*AuthCompleteResponse, error) {
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, NewError(ErrValidation, "failed to marshal request", err)
+	}
+
+	apiReq, err := http.NewRequestWithContext(ctx, "POST",
+		fmt.Sprintf("%s/hub/auth/complete", c.BaseURL),
+		bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, NewError(ErrAPI, "failed to create request", err)
+	}
+
+	apiReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.HTTPClient.Do(apiReq)
+	if err != nil {
+		return nil, NewError(ErrNetwork, "request failed", err)
+	}
+	defer resp.Body.Close()
+
+	var completeResp AuthCompleteResponse
+	if err := json.NewDecoder(resp.Body).Decode(&completeResp); err != nil {
+		return nil, NewError(ErrAPI, "failed to decode response", err)
+	}
+
+	return &completeResp, nil
+}
+
+func ParseAuthRedirect(redirectURL string) (*AuthTokens, error) {
+	u, err := url.Parse(redirectURL)
+	if err != nil {
+		return nil, err
+	}
+
+	fragment := u.Fragment
+	values, err := url.ParseQuery(fragment)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthTokens{
+		AccessToken:  values.Get("access_token"),
+		RefreshToken: values.Get("refresh_token"),
+	}, nil
 } 

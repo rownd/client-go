@@ -6,12 +6,14 @@ import (
     "net/http"
     "encoding/json"
     "context"
+    
+    rowndtesting "github.com/rgthelen/rownd-go-test/pkg/rownd/testing"
 )
 
-var testConfig = &Config{
-    APIUrl:    "https://mock-api.local",
-    AppKey:    "test-app-key",
-    AppSecret: "test-app-secret",
+var testConfig = &ClientConfig{
+    BaseURL:    "https://mock-api.local",
+    AppKey:     "test-app-key",
+    AppSecret:  "test-app-secret",
 }
 
 func TestClient(t *testing.T) {
@@ -35,14 +37,17 @@ func TestClient(t *testing.T) {
     defer server.Close()
 
     // Create client with test server URL
-    testConfig.APIUrl = server.URL
-    client := NewClient(testConfig)
+    testConfig.BaseURL = server.URL
+    client, err := NewClient(testConfig)
+    if err != nil {
+        t.Fatalf("Failed to create client: %v", err)
+    }
 
     // Create context for tests
     ctx := context.Background()
 
     t.Run("validate token", func(t *testing.T) {
-        token, err := testing.GenerateTestToken()
+        token, err := rowndtesting.GenerateTestToken()
         if err != nil {
             t.Fatalf("Failed to generate test token: %v", err)
         }
