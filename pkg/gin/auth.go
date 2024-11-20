@@ -3,6 +3,7 @@ package gin
 import (
     "github.com/gin-gonic/gin"
     "github.com/rgthelen/rownd-go-test/pkg/rownd"
+    "strings"
 )
 
 type AuthOptions struct {
@@ -13,32 +14,41 @@ type AuthOptions struct {
 
 func Authenticate(client *rownd.Client, opts AuthOptions) gin.HandlerFunc {
     return func(c *gin.Context) {
-		export async function fetchRowndWellKnownConfig(
-			apiUrl: string
-		  ): Promise<WellKnownConfig> {
-			if (cache.has('oauth-config')) {
-			  return cache.get('oauth-config') as WellKnownConfig;
-			}
-		  
-			let resp: WellKnownConfig = await got
-			  .get(`${apiUrl}/hub/auth/.well-known/oauth-authorization-server`)
-			  .json();
-			cache.set('oauth-config', resp);
-		  
-			return resp;
-		  }
-		  export async function fetchRowndJwks(
-			jwksUrl: string
-		  ): Promise<GetKeyFunction<jose.JWSHeaderParameters, jose.FlattenedJWSInput>> {
-			if (cache.has('jwks')) {
-			  return jose.createLocalJWKSet(cache.get('jwks') as jose.JSONWebKeySet);
-			}
-		  
-			let resp: jose.JSONWebKeySet = await got.get(jwksUrl).json();
-			cache.set('jwks', resp);
-		  
-			return jose.createLocalJWKSet(resp);
-		  }
-        // Implementation similar to Node.js express middleware
+        // Get token from Authorization header
+        authHeader := c.GetHeader("Authorization")
+        if authHeader == "" {
+            c.AbortWithStatusJSON(401, gin.H{"error": "No authorization header"})
+            return
+        }
+
+        // Extract token
+        token := strings.TrimPrefix(authHeader, "Bearer ")
+        
+        // Validate token
+        tokenInfo, err := client.ValidateToken(token)
+        if err != nil {
+            if opts.ErrOnInvalidToken {
+                c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token"})
+                return
+            }
+            c.Next()
+            return
+        }
+
+        // Fetch user info if requested
+        if opts.FetchUserInfo {
+            user, err := client.GetUser(tokenInfo.UserID)
+            if err != nil {
+                if opts.ErrOnMissingUser {
+                    c.AbortWithStatusJSON(404, gin.H{"error": "User not found"})
+                    return
+                }
+            } else {
+                c.Set("rownd_user", user)
+            }
+        }
+
+        c.Set("rownd_token_info", tokenInfo)
+        c.Next()
     }
 }

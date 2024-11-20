@@ -1,5 +1,11 @@
 package auth
 
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
 type WellKnownConfig struct {
     Issuer                                     string   `json:"issuer"`
     TokenEndpoint                              string   `json:"token_endpoint"`
@@ -12,5 +18,16 @@ type WellKnownConfig struct {
 }
 
 func FetchWellKnownConfig(client *http.Client, baseURL string) (*WellKnownConfig, error) {
-    // Implementation
+    resp, err := client.Get(fmt.Sprintf("%s/hub/auth/.well-known/oauth-authorization-server", baseURL))
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+
+    var config WellKnownConfig
+    if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
+        return nil, err
+    }
+
+    return &config, nil
 }
