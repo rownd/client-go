@@ -3,6 +3,8 @@ package rownd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -16,7 +18,7 @@ type TokenValidationResponse struct {
 }
 
 func (c *Client) ValidateToken(token string) (*TokenValidationResponse, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/hub/auth/validate", c.BaseURL), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/hub/auth/validate", c.BaseURL), nil)
 	if err != nil {
 		return nil, NewError(ErrAPI, "failed to create request", err)
 	}
@@ -24,6 +26,7 @@ func (c *Client) ValidateToken(token string) (*TokenValidationResponse, error) {
 	req.Header.Set("x-rownd-app-key", c.AppKey)
 	req.Header.Set("x-rownd-app-secret", c.AppSecret)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -31,17 +34,16 @@ func (c *Client) ValidateToken(token string) (*TokenValidationResponse, error) {
 	}
 	defer resp.Body.Close()
 
+	body, _ := ioutil.ReadAll(resp.Body)
+	log.Printf("Response from Rownd: %s", string(body))
+
 	var result TokenValidationResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, NewError(ErrAPI, "failed to decode response", err)
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, NewError(ErrAPI, fmt.Sprintf("failed to decode response: %s", string(body)), err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return &result, NewError(ErrAuthentication, result.Error, nil)
-	}
-
-	if !result.Valid {
-		return &result, NewError(ErrAuthentication, "token is invalid", nil)
+		return &result, NewError(ErrAuthentication, fmt.Sprintf("authentication failed: %s", result.Error), nil)
 	}
 
 	return &result, nil
