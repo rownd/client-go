@@ -15,27 +15,30 @@ Here's a basic usage example:
 ```go
 package main
 import (
-"fmt"
+"context"
 "github.com/rgthelen/rownd-go-test/pkg/rownd"
 )
 func main() {
-client := rownd.NewClient(&rownd.Config{
-AppKey: "YOUR_ROWND_APP_KEY",
-AppSecret: "YOUR_ROWND_APP_SECRET",
+client, err := rownd.NewClient(&rownd.ClientConfig{
+AppKey: "YOUR_APP_KEY",
+AppSecret: "YOUR_APP_SECRET",
 })
+if err != nil {
+panic(err)
+}
 // Validate a token
-tokenInfo, err := client.ValidateToken("your-token-here")
+tokenInfo, err := client.ValidateToken(context.Background(), "your-token")
 if err != nil {
 panic(err)
 }
 // Get user information
-userInfo, err := client.GetUser(tokenInfo.UserID)
+userInfo, err := client.GetUser(context.Background(), tokenInfo.UserID)
 if err != nil {
 panic(err)
 }
-fmt.Printf("User data: %+v\n", userInfo.Data)
 }
 ```
+
 
 This example demonstrates how to initialize a client, validate a token, and retrieve user information. You can expand this code to include other Rownd features as needed.
 

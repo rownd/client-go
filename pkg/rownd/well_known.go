@@ -1,32 +1,29 @@
-package auth
+package rownd
 
 import (
+    "context"
     "encoding/json"
     "fmt"
     "net/http"
 )
 
-type WellKnownConfig struct {
-    Issuer                                     string   `json:"issuer"`
-    TokenEndpoint                              string   `json:"token_endpoint"`
-    JwksURI                                    string   `json:"jwks_uri"`
-    UserinfoEndpoint                           string   `json:"userinfo_endpoint"`
-    ResponseTypesSupported                     []string `json:"response_types_supported"`
-    IDTokenSigningAlgValuesSupported          []string `json:"id_token_signing_alg_values_supported"`
-    TokenEndpointAuthMethodsSupported         []string `json:"token_endpoint_auth_methods_supported"`
-    CodeChallengeMethodsSupported             []string `json:"code_challenge_methods_supported"`
-}
-
-func FetchWellKnownConfig(client *http.Client, baseURL string) (*WellKnownConfig, error) {
-    resp, err := client.Get(fmt.Sprintf("%s/hub/auth/.well-known/oauth-authorization-server", baseURL))
+func (c *Client) FetchWellKnownConfig(ctx context.Context) (*WellKnownConfig, error) {
+    req, err := http.NewRequestWithContext(ctx, "GET", 
+        fmt.Sprintf("%s/hub/auth/.well-known/oauth-authorization-server", c.BaseURL), 
+        nil)
     if err != nil {
-        return nil, err
+        return nil, NewError(ErrAPI, "failed to create request", err)
+    }
+
+    resp, err := c.HTTPClient.Do(req)
+    if err != nil {
+        return nil, NewError(ErrNetwork, "request failed", err)
     }
     defer resp.Body.Close()
 
     var config WellKnownConfig
     if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
-        return nil, err
+        return nil, NewError(ErrAPI, "failed to decode response", err)
     }
 
     return &config, nil

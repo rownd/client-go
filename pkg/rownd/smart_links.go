@@ -1,5 +1,13 @@
 package rownd
 
+import (
+    "bytes"
+    "context"
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
 type SmartLinkOptions struct {
     Email       string                 `json:"email,omitempty"`
     Phone       string                 `json:"phone,omitempty"`
@@ -12,26 +20,32 @@ type SmartLink struct {
     AppUserID string `json:"app_user_id"`
 }
 
-func (c *Client) CreateSmartLink(opts *SmartLinkOptions) (*SmartLink, error) {
-    resp, err := c.httpClient.DoRequest(
-        context.Background(),
-        "POST",
-        fmt.Sprintf("%s/hub/auth/magic", c.baseURL),
-        opts,
-        &RequestOptions{
-            Headers: map[string]string{
-                "x-rownd-app-key":    c.appKey,
-                "x-rownd-app-secret": c.appSecret,
-            },
-        },
-    )
+func (c *Client) CreateSmartLink(ctx context.Context, opts *SmartLinkOptions) (*SmartLink, error) {
+    payload, err := json.Marshal(opts)
     if err != nil {
-        return nil, err
+        return nil, NewError(ErrValidation, "failed to marshal request", err)
     }
 
+    req, err := http.NewRequestWithContext(ctx, "POST", 
+        fmt.Sprintf("%s/hub/auth/magic", c.BaseURL), 
+        bytes.NewBuffer(payload))
+    if err != nil {
+        return nil, NewError(ErrAPI, "failed to create request", err)
+    }
+
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-rownd-app-key", c.AppKey)
+    req.Header.Set("x-rownd-app-secret", c.AppSecret)
+
+    resp, err := c.HTTPClient.Do(req)
+    if err != nil {
+        return nil, NewError(ErrNetwork, "request failed", err)
+    }
+    defer resp.Body.Close()
+
     var link SmartLink
-    if err := DecodeResponse(resp, &link); err != nil {
-        return nil, err
+    if err := json.NewDecoder(resp.Body).Decode(&link); err != nil {
+        return nil, NewError(ErrAPI, "failed to decode response", err)
     }
 
     return &link, nil
