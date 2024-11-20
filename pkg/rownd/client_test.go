@@ -5,8 +5,6 @@ import (
     "net/http/httptest"
     "net/http"
     "encoding/json"
-    
-    "github.com/rgthelen/rownd-go-test"
 )
 
 var testConfig = &Config{

@@ -1,6 +1,7 @@
 package main
 
 import (
+    "context"
     "fmt"
     "log"
     
@@ -8,10 +9,18 @@ import (
 )
 
 func main() {
-    client := rownd.NewClient("your-app-key", "your-app-secret")
+    client, err := rownd.NewClient(&rownd.ClientConfig{
+        AppKey:    "your-app-key",
+        AppSecret: "your-app-secret",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
 
+    ctx := context.Background()
+    
     // Validate a token
-    validation, err := client.ValidateToken("some-token")
+    validation, err := client.ValidateToken(ctx, "some-token")
     if err != nil {
         log.Fatal(err)
     }

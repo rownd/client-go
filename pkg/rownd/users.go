@@ -7,13 +7,6 @@ import (
     "net/http"
 )
 
-type User struct {
-    ID         string                 `json:"id"`
-    Data       map[string]interface{} `json:"data"`
-    CreatedAt  string                 `json:"created_at"`
-    UpdatedAt  string                 `json:"updated_at"`
-}
-
 func (c *Client) GetUser(userID string) (*User, error) {
     req, err := http.NewRequest("GET", fmt.Sprintf("%s/hub/users/%s", c.BaseURL, userID), nil)
     if err != nil {

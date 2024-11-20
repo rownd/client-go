@@ -40,3 +40,14 @@ type ClientConfig struct {
 type UserUpdateRequest struct {
     Data map[string]interface{} `json:"data"`
 }
+
+// WellKnownConfig represents the OAuth well-known configuration
+type WellKnownConfig struct {
+    Issuer                string   `json:"issuer"`
+    AuthorizationEndpoint string   `json:"authorization_endpoint"`
+    TokenEndpoint         string   `json:"token_endpoint"`
+    JwksUri              string   `json:"jwks_uri"`
+    ResponseTypesSupported []string `json:"response_types_supported"`
+    SubjectTypesSupported []string `json:"subject_types_supported"`
+    ScopesSupported      []string `json:"scopes_supported"`
+}

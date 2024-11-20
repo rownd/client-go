@@ -2,8 +2,6 @@ module github.com/rgthelen/rownd-go-test
 
 go 1.21
 
-package rownd
-
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
