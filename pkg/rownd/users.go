@@ -6,7 +6,6 @@ import (
     "fmt"
     "net/http"
     "context"
-    "github.com/golang-jwt/jwt"
 )
 
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
