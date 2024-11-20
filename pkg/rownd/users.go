@@ -7,6 +7,8 @@ import (
     "net/http"
     "context"
     "strings"
+    "io"
+    "mime/multipart"
 )
 
 func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenValidationResponse) (*User, error) {
@@ -73,32 +75,102 @@ func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenVal
     return &user, nil
 }
 
-func (c *Client) UpdateUser(userID string, data map[string]interface{}) (*User, error) {
-    payload, err := json.Marshal(map[string]interface{}{
+func (c *Client) UpdateUser(ctx context.Context, appID string, userID string, data map[string]interface{}) (*User, error) {
+    payload := map[string]interface{}{
         "data": data,
-    })
+    }
+
+    req, err := http.NewRequestWithContext(ctx, "PUT", 
+        fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID), 
+        jsonReader(payload))
+    if err != nil {
+        return nil, NewError(ErrAPI, "failed to create request", err)
+    }
+
+    return c.doUserRequest(req)
+}
+
+func (c *Client) PatchUser(ctx context.Context, appID string, userID string, data map[string]interface{}) (*User, error) {
+    payload := map[string]interface{}{
+        "data": data,
+    }
+
+    req, err := http.NewRequestWithContext(ctx, "PATCH", 
+        fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID), 
+        jsonReader(payload))
+    if err != nil {
+        return nil, NewError(ErrAPI, "failed to create request", err)
+    }
+
+    return c.doUserRequest(req)
+}
+
+func (c *Client) GetUserField(ctx context.Context, appID string, userID string, field string) (interface{}, error) {
+    req, err := http.NewRequestWithContext(ctx, "GET", 
+        fmt.Sprintf("%s/applications/%s/users/%s/data/fields/%s", c.BaseURL, appID, userID, field), 
+        nil)
+    if err != nil {
+        return nil, NewError(ErrAPI, "failed to create request", err)
+    }
+
+    resp, err := c.doRequest(req)
     if err != nil {
         return nil, err
     }
 
-    req, err := http.NewRequest("PATCH", fmt.Sprintf("%s/hub/users/%s", c.BaseURL, userID), bytes.NewBuffer(payload))
-    if err != nil {
-        return nil, err
+    var result map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return nil, NewError(ErrAPI, "failed to decode response", err)
     }
 
+    return result["value"], nil
+}
+
+func (c *Client) UpdateUserField(ctx context.Context, appID string, userID string, field string, value interface{}) error {
+    form := new(bytes.Buffer)
+    writer := multipart.NewWriter(form)
+    
+    if err := writer.WriteField("value", fmt.Sprintf("%v", value)); err != nil {
+        return NewError(ErrAPI, "failed to write form field", err)
+    }
+    writer.Close()
+
+    req, err := http.NewRequestWithContext(ctx, "PUT", 
+        fmt.Sprintf("%s/applications/%s/users/%s/data/fields/%s", c.BaseURL, appID, userID, field), 
+        form)
+    if err != nil {
+        return NewError(ErrAPI, "failed to create request", err)
+    }
+
+    req.Header.Set("Content-Type", writer.FormDataContentType())
+    
+    _, err = c.doRequest(req)
+    return err
+}
+
+func jsonReader(v interface{}) io.Reader {
+    data, _ := json.Marshal(v)
+    return bytes.NewReader(data)
+}
+
+func (c *Client) doUserRequest(req *http.Request) (*User, error) {
+    req.Header.Set("Content-Type", "application/json")
     req.Header.Set("x-rownd-app-key", c.AppKey)
     req.Header.Set("x-rownd-app-secret", c.AppSecret)
-    req.Header.Set("Content-Type", "application/json")
 
     resp, err := c.HTTPClient.Do(req)
     if err != nil {
-        return nil, err
+        return nil, NewError(ErrNetwork, "request failed", err)
     }
     defer resp.Body.Close()
 
+    if resp.StatusCode != http.StatusOK {
+        return nil, handleErrorResponse(resp)
+    }
+
     var user User
     if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-        return nil, err
+        return nil, NewError(ErrAPI, "failed to decode response", err)
     }
 
     return &user, nil

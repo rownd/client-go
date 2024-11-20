@@ -56,4 +56,16 @@ The SDK provides the following main methods:
 ### Smart Links
 - `CreateSmartLink(ctx context.Context, opts *SmartLinkOptions) (*SmartLink, error)`
 
+### Group Management
+- `CreateGroupInvite(ctx context.Context, appID string, groupID string, req *CreateGroupInviteRequest) (*GroupInviteResponse, error)`
+- `GetGroupInvite(ctx context.Context, appID string, groupID string, inviteID string) (*GroupInvite, error)`
+- `UpdateGroupInvite(ctx context.Context, appID string, groupID string, inviteID string, req *CreateGroupInviteRequest) (*GroupInvite, error)`
+- `DeleteGroupInvite(ctx context.Context, appID string, groupID string, inviteID string) error`
+- `ListGroupInvites(ctx context.Context, appID string, groupID string) (*GroupInviteListResponse, error)`
+- `CreateGroupMember(ctx context.Context, appID string, groupID string, req *CreateGroupMemberRequest) (*GroupMember, error)`
+- `GetGroupMember(ctx context.Context, appID string, groupID string, memberID string) (*GroupMember, error)`
+- `UpdateGroupMember(ctx context.Context, appID string, groupID string, memberID string, req *CreateGroupMemberRequest) (*GroupMember, error)`
+- `DeleteGroupMember(ctx context.Context, appID string, groupID string, memberID string) error`
+- `ListGroupMembers(ctx context.Context, appID string, groupID string) (*GroupMemberListResponse, error)`
+
 For detailed documentation and examples, visit our [official documentation](https://docs.rownd.io).
