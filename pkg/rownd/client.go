@@ -4,30 +4,38 @@ import (
     "net/http"
     "time"
     "github.com/patrickmn/go-cache"
+    "fmt"
 )
 
 type Client struct {
     AppKey      string
     AppSecret   string
+    AppID       string
     BaseURL     string
     HTTPClient  *http.Client
-    config      *ClientConfig
     cache       *cache.Cache
 }
 
 // NewClient creates a new Rownd client instance
 func NewClient(config *ClientConfig) (*Client, error) {
-    if err := validateConfig(config); err != nil {
-        return nil, err
+    if config.AppKey == "" || config.AppSecret == "" {
+        return nil, fmt.Errorf("app key and secret are required")
+    }
+
+    baseURL := config.BaseURL
+    if baseURL == "" {
+        baseURL = "https://api.rownd.io"
     }
 
     return &Client{
         AppKey:     config.AppKey,
         AppSecret:  config.AppSecret,
-        BaseURL:    defaultString(config.BaseURL, "https://api.rownd.io"),
-        HTTPClient: &http.Client{Timeout: defaultDuration(config.Timeout, 30*time.Second)},
-        config:     config,
-        cache:      cache.New(cache.NoExpiration, 10*time.Minute),
+        AppID:      config.AppID,
+        BaseURL:    baseURL,
+        HTTPClient: &http.Client{
+            Timeout: config.Timeout,
+        },
+        cache: cache.New(5*time.Minute, 10*time.Minute),
     }, nil
 }
 
