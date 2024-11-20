@@ -1,9 +1,11 @@
 package rownd
 
 import (
+    "bytes"
     "context"
     "encoding/json"
     "fmt"
+    "io"
     "net/http"
     "time"
 )
@@ -418,4 +420,33 @@ func (c *Client) doGroupMemberRequest(req *http.Request) (*GroupMember, error) {
     }
 
     return &member, nil
+}
+
+func handleErrorResponse(resp *http.Response) error {
+    var errResp struct {
+        Message string `json:"message"`
+        Code    string `json:"code"`
+    }
+    if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+        return NewError(ErrAPI, fmt.Sprintf("request failed with status %d", resp.StatusCode), err)
+    }
+    return NewError(ErrAPI, errResp.Message, nil)
+}
+
+func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-rownd-app-key", c.AppKey)
+    req.Header.Set("x-rownd-app-secret", c.AppSecret)
+
+    resp, err := c.HTTPClient.Do(req)
+    if err != nil {
+        return nil, NewError(ErrNetwork, "request failed", err)
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        defer resp.Body.Close()
+        return nil, handleErrorResponse(resp)
+    }
+
+    return resp, nil
 }
