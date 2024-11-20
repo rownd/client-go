@@ -10,20 +10,18 @@ import (
     "github.com/golang-jwt/jwt/v5"
 )
 
-func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
-    // Get app ID from token claims if available
+func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenValidationResponse) (*User, error) {
+    // Get app ID from token claims
     var appID string
-    if claims, ok := ctx.Value("rownd_token_claims").(jwt.MapClaims); ok {
-        if aud, ok := claims["aud"].([]interface{}); ok && len(aud) > 0 {
-            if audStr, ok := aud[0].(string); ok {
-                if strings.HasPrefix(audStr, "app:") {
-                    appID = audStr[4:]
-                }
+    if tokenInfo != nil {
+        if aud, ok := tokenInfo.DecodedToken["aud"].([]string); ok && len(aud) > 0 {
+            if strings.HasPrefix(aud[0], "app:") {
+                appID = aud[0][4:]
             }
         }
     }
 
-    // If no app ID in context, use the one from client config
+    // If no app ID in token, use the one from client config
     if appID == "" {
         appID = c.AppID
     }
