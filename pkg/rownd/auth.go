@@ -8,16 +8,17 @@ import (
 
 type TokenValidationResponse struct {
 	Valid    bool   `json:"valid"`
-	UserID   string `json:"user_id"`
-	AppID    string `json:"app_id"`
-	IssuedAt int64  `json:"iat"`
-	ExpireAt int64  `json:"exp"`
+	UserID   string `json:"user_id,omitempty"`
+	AppID    string `json:"app_id,omitempty"`
+	IssuedAt int64  `json:"iat,omitempty"`
+	ExpireAt int64  `json:"exp,omitempty"`
+	Error    string `json:"error,omitempty"`
 }
 
 func (c *Client) ValidateToken(token string) (*TokenValidationResponse, error) {
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/hub/auth/validate", c.BaseURL), nil)
 	if err != nil {
-		return nil, err
+		return nil, NewError(ErrAPI, "failed to create request", err)
 	}
 
 	req.Header.Set("x-rownd-app-key", c.AppKey)
@@ -26,13 +27,21 @@ func (c *Client) ValidateToken(token string) (*TokenValidationResponse, error) {
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, NewError(ErrNetwork, "request failed", err)
 	}
 	defer resp.Body.Close()
 
 	var result TokenValidationResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, NewError(ErrAPI, "failed to decode response", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return &result, NewError(ErrAuthentication, result.Error, nil)
+	}
+
+	if !result.Valid {
+		return &result, NewError(ErrAuthentication, "token is invalid", nil)
 	}
 
 	return &result, nil
