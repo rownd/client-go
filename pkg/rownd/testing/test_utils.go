@@ -2,7 +2,6 @@ package testing
 
 import (
     "crypto/ed25519"
-    "encoding/base64"
     "time"
 
     "github.com/golang-jwt/jwt/v5"
