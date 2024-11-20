@@ -2,12 +2,15 @@ package rownd
 
 import (
 	"context"
+	"crypto/ed25519"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 	
 	"github.com/golang-jwt/jwt/v5"
+	rowndtesting "github.com/rgthelen/rownd-go-test/pkg/rownd/testing"
 )
 
 const (
@@ -40,40 +43,38 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 
 	// Parse and validate the token
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		// Support both RSA and EdDSA
-		switch token.Method.(type) {
-		case *jwt.SigningMethodRSA:
-			kid, ok := token.Header["kid"].(string)
-			if !ok {
-				return nil, fmt.Errorf("kid header not found")
-			}
-			
-			// Find the key with matching kid
-			for _, rawKey := range jwks.Keys {
-				var key struct {
-					Kid string `json:"kid"`
-					N   string `json:"n"`
-					E   string `json:"e"`
-				}
-				if err := json.Unmarshal(rawKey, &key); err != nil {
-					continue
-				}
-				if key.Kid == kid {
-					return jwt.ParseRSAPublicKeyFromPEM([]byte(key.N))
-				}
-			}
-			return nil, fmt.Errorf("key %v not found", kid)
-			
-		case *jwt.SigningMethodEd25519:
-			// For testing, use the public key directly
-			if publicKey, _ := testing.GetKeys(); publicKey != nil {
-				return publicKey, nil
-			}
-			return nil, fmt.Errorf("EdDSA public key not found")
-			
-		default:
+		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
+
+		kid, ok := token.Header["kid"].(string)
+		if !ok {
+			// For testing, use the test public key if no kid is present
+			if publicKey, _ := rowndtesting.GetKeys(); publicKey != nil {
+				return publicKey, nil
+			}
+			return nil, fmt.Errorf("kid header not found")
+		}
+
+		// Find the key with matching kid
+		for _, rawKey := range jwks.Keys {
+			var key struct {
+				Kid string `json:"kid"`
+				X   string `json:"x"` // EdDSA public key
+			}
+			if err := json.Unmarshal(rawKey, &key); err != nil {
+				continue
+			}
+			if key.Kid == kid {
+				// Decode the EdDSA public key from base64
+				publicKey, err := base64.RawURLEncoding.DecodeString(key.X)
+				if err != nil {
+					continue
+				}
+				return ed25519.PublicKey(publicKey), nil
+			}
+		}
+		return nil, fmt.Errorf("key %v not found", kid)
 	})
 
 	if err != nil {
