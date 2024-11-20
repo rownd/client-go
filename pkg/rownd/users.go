@@ -5,16 +5,18 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
+    "context"
 )
 
-func (c *Client) GetUser(userID string) (*User, error) {
-    req, err := http.NewRequest("GET", fmt.Sprintf("%s/hub/users/%s", c.BaseURL, userID), nil)
+func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
+    req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/hub/users/%s", c.BaseURL, userID), nil)
     if err != nil {
         return nil, err
     }
 
     req.Header.Set("x-rownd-app-key", c.AppKey)
     req.Header.Set("x-rownd-app-secret", c.AppSecret)
+    req.Header.Set("Content-Type", "application/json")
 
     resp, err := c.HTTPClient.Do(req)
     if err != nil {
@@ -22,20 +24,20 @@ func (c *Client) GetUser(userID string) (*User, error) {
     }
     defer resp.Body.Close()
 
-    // Parse the API response structure
-    var apiResponse struct {
-        Data *User `json:"data"`
-    }
-    
-    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-        return nil, err
-    }
-
-    if apiResponse.Data == nil {
-        return nil, fmt.Errorf("no user data found")
+    if resp.StatusCode != http.StatusOK {
+        var apiErr APIResponse
+        if err := json.NewDecoder(resp.Body).Decode(&apiErr); err != nil {
+            return nil, fmt.Errorf("failed to decode error response: %w", err)
+        }
+        return nil, fmt.Errorf("API error: %s", apiErr.Error)
     }
 
-    return apiResponse.Data, nil
+    var user User
+    if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+        return nil, fmt.Errorf("failed to decode user response: %w", err)
+    }
+
+    return &user, nil
 }
 
 func (c *Client) UpdateUser(userID string, data map[string]interface{}) (*User, error) {
