@@ -21,6 +21,10 @@ type TokenValidationResponse struct {
 	AccessToken  string        `json:"access_token"`
 }
 
+type JWKS struct {
+	Keys []json.RawMessage `json:"keys"`
+}
+
 func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidationResponse, error) {
 	// First fetch the well-known config
 	config, err := c.FetchWellKnownConfig(ctx)
@@ -29,7 +33,7 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 	}
 
 	// Fetch JWKS
-	keySet, err := c.fetchJWKS(ctx, config.JwksUri)
+	jwks, err := c.fetchJWKS(ctx, config.JwksUri)
 	if err != nil {
 		return nil, NewError(ErrAPI, "failed to fetch JWKS", err)
 	}
@@ -45,12 +49,21 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 			return nil, fmt.Errorf("kid header not found")
 		}
 
-		key := keySet.LookupKeyID(kid)
-		if key == nil {
-			return nil, fmt.Errorf("key %v not found", kid)
+		// Find the key with matching kid
+		for _, rawKey := range jwks.Keys {
+			var key struct {
+				Kid string `json:"kid"`
+				N   string `json:"n"`
+				E   string `json:"e"`
+			}
+			if err := json.Unmarshal(rawKey, &key); err != nil {
+				continue
+			}
+			if key.Kid == kid {
+				return jwt.ParseRSAPublicKeyFromPEM([]byte(key.N))
+			}
 		}
-
-		return key.PublicKey, nil
+		return nil, fmt.Errorf("key %v not found", kid)
 	})
 
 	if err != nil {
@@ -62,7 +75,6 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 		return nil, NewError(ErrAuthentication, "invalid token claims", nil)
 	}
 
-	// Extract user ID from claims
 	userID, _ := claims[CLAIM_USER_ID].(string)
 
 	return &TokenValidationResponse{
@@ -72,10 +84,10 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 	}, nil
 }
 
-func (c *Client) fetchJWKS(ctx context.Context, jwksUri string) (*jwt.KeySet, error) {
+func (c *Client) fetchJWKS(ctx context.Context, jwksUri string) (*JWKS, error) {
 	// Check cache first
-	if cachedKeySet := c.cache.Get("jwks"); cachedKeySet != nil {
-		return cachedKeySet.(*jwt.KeySet), nil
+	if cached, found := c.cache.Get("jwks"); found {
+		return cached.(*JWKS), nil
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", jwksUri, nil)
@@ -89,20 +101,13 @@ func (c *Client) fetchJWKS(ctx context.Context, jwksUri string) (*jwt.KeySet, er
 	}
 	defer resp.Body.Close()
 
-	var jwks struct {
-		Keys []json.RawMessage `json:"keys"`
-	}
+	var jwks JWKS
 	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
 		return nil, err
 	}
 
-	keySet, err := jwt.ParseKeySet(jwks.Keys)
-	if err != nil {
-		return nil, err
-	}
-
 	// Cache the key set
-	c.cache.Set("jwks", keySet, time.Hour)
+	c.cache.Set("jwks", &jwks, time.Hour)
 
-	return keySet, nil
+	return &jwks, nil
 } 

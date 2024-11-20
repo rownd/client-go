@@ -39,4 +39,18 @@ func validateConfig(config *ClientConfig) error {
         return NewError(ErrValidation, "app secret is required", nil)
     }
     return nil
+}
+
+func defaultString(val, defaultVal string) string {
+    if val == "" {
+        return defaultVal
+    }
+    return val
+}
+
+func defaultDuration(val, defaultVal time.Duration) time.Duration {
+    if val == 0 {
+        return defaultVal
+    }
+    return val
 } 
