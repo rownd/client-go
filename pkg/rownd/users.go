@@ -6,10 +6,32 @@ import (
     "fmt"
     "net/http"
     "context"
+    "github.com/golang-jwt/jwt"
 )
 
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
-    req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/hub/users/%s", c.BaseURL, userID), nil)
+    // Get app ID from token claims if available
+    var appID string
+    if claims, ok := ctx.Value("rownd_token_claims").(jwt.MapClaims); ok {
+        if aud, ok := claims["aud"].([]interface{}); ok && len(aud) > 0 {
+            if audStr, ok := aud[0].(string); ok {
+                if len(audStr) > 4 && audStr[:4] == "app:" {
+                    appID = audStr[4:]
+                }
+            }
+        }
+    }
+
+    // If no app ID in context, use the one from client config
+    if appID == "" {
+        appID = c.AppID
+    }
+
+    if appID == "" {
+        return nil, fmt.Errorf("app ID not found in token or client config")
+    }
+
+    req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID), nil)
     if err != nil {
         return nil, err
     }

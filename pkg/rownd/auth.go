@@ -88,6 +88,9 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidat
 
 	userID, _ := claims[CLAIM_USER_ID].(string)
 
+	// Store claims in context for other methods to use
+	ctx = context.WithValue(ctx, "rownd_token_claims", claims)
+
 	return &TokenValidationResponse{
 		DecodedToken: claims,
 		UserID:       userID,

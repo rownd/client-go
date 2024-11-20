@@ -31,6 +31,7 @@ type APIResponse struct {
 type ClientConfig struct {
     AppKey     string
     AppSecret  string
+    AppID      string        // Optional: Used as fallback if not in token
     BaseURL    string
     Timeout    time.Duration
     RetryCount int
