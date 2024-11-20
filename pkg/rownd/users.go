@@ -12,8 +12,8 @@ import (
 func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
     // Get app ID from token claims if available
     var appID string
-    if claims, ok := ctx.Value("rownd_token_claims").(jwt.MapClaims); ok {
-        if aud, ok := claims["aud"].([]interface{}); ok && len(aud) > 0 {
+    if tokenInfo, ok := ctx.Value("rownd_token_info").(*TokenValidationResponse); ok {
+        if aud, ok := tokenInfo.DecodedToken["aud"].([]interface{}); ok && len(aud) > 0 {
             if audStr, ok := aud[0].(string); ok {
                 if len(audStr) > 4 && audStr[:4] == "app:" {
                     appID = audStr[4:]
