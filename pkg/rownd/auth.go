@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -35,6 +36,15 @@ type TokenValidationResponse struct {
 
 type JWKS struct {
 	Keys []json.RawMessage `json:"keys"`
+}
+
+type MagicLinkResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	AppUserID    string `json:"app_user_id"`
+	AppID        string `json:"app_id"`
+	LastSignIn   string `json:"last_sign_in"`
+	RedirectURL  string `json:"redirect_url"`
 }
 
 func (c *Client) ValidateToken(ctx context.Context, token string) (*TokenValidationResponse, error) {
@@ -210,4 +220,44 @@ func ParseAuthRedirect(redirectURL string) (*AuthTokens, error) {
 		AccessToken:  values.Get("access_token"),
 		RefreshToken: values.Get("refresh_token"),
 	}, nil
+}
+
+// RedeemMagicLink exchanges a magic link ID for authentication tokens
+func (c *Client) RedeemMagicLink(ctx context.Context, linkID string) (*MagicLinkResponse, error) {
+	endpoint := fmt.Sprintf("%s/hub/auth/magic/%s", c.BaseURL, linkID)
+	fmt.Printf("\nAttempting to redeem magic link at: %s\n", endpoint)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	if err != nil {
+		return nil, NewError(ErrAPI, "failed to create request", err)
+	}
+
+	req.Header.Set("User-Agent", "rownd sdk")
+	fmt.Printf("Request headers: %+v\n", req.Header)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, NewError(ErrNetwork, fmt.Sprintf("request failed: %v", err), err)
+	}
+	defer resp.Body.Close()
+
+	// Read and log response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, NewError(ErrAPI, "failed to read response body", err)
+	}
+	fmt.Printf("Response status: %d\n", resp.StatusCode)
+	fmt.Printf("Response body: %s\n", string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, NewError(ErrAPI, fmt.Sprintf("failed to redeem magic link: %s", string(body)), nil)
+	}
+
+	var magicLinkResp MagicLinkResponse
+	if err := json.Unmarshal(body, &magicLinkResp); err != nil {
+		return nil, NewError(ErrAPI, "failed to decode response", err)
+	}
+
+	fmt.Printf("Successfully redeemed magic link. Access token length: %d\n", len(magicLinkResp.AccessToken))
+	return &magicLinkResp, nil
 } 

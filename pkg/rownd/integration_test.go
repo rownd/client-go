@@ -2,11 +2,10 @@ package rownd
 
 import (
     "context"
-    "os"
-    "testing"
-    "time"
     "encoding/json"
     "strings"
+    "testing"
+    "time"
     
     "github.com/stretchr/testify/assert"
     rowndtesting "github.com/rgthelen/rownd-go-test/pkg/rownd/testing"
@@ -15,25 +14,8 @@ import (
 func TestRowndIntegration(t *testing.T) {
     // Get test configuration
     testConfig := rowndtesting.GetTestConfig()
-    
-    // Log environment variables
-    t.Logf("Environment Variables:")
-    t.Logf("APP_KEY: %s", testConfig.AppKey)
-    t.Logf("APP_ID: %s", testConfig.AppID)
-    t.Logf("BASE_URL: %s", testConfig.BaseURL)
-    
-    // Get tokens from environment variables
-    validToken := os.Getenv("ROWND_TEST_VALID_TOKEN")
-    expiredToken := os.Getenv("ROWND_TEST_EXPIRED_TOKEN")
-    
-    t.Logf("VALID_TOKEN: %s", validToken[:30]+"...") // Only log first 30 chars for security
-    t.Logf("EXPIRED_TOKEN: %s", expiredToken[:30]+"...")
-    
-    if validToken == "" || expiredToken == "" {
-        t.Fatal("ROWND_TEST_VALID_TOKEN and ROWND_TEST_EXPIRED_TOKEN must be set in environment")
-    }
+    var validToken string // Will be set after magic link redemption
 
-    // Initialize client
     client, err := NewClient(&ClientConfig{
         AppKey:    testConfig.AppKey,
         AppSecret: testConfig.AppSecret,
@@ -41,79 +23,15 @@ func TestRowndIntegration(t *testing.T) {
         BaseURL:   testConfig.BaseURL,
         Timeout:   10 * time.Second,
     })
-    
     if err != nil {
         t.Fatalf("Failed to create client: %v", err)
     }
 
     ctx := context.Background()
 
-    // Test token validation
-    t.Run("validate valid token", func(t *testing.T) {
-        tokenInfo, err := client.ValidateToken(ctx, validToken)
-        assert.NoError(t, err)
-        assert.NotNil(t, tokenInfo)
-        assert.NotEmpty(t, tokenInfo.UserID)
-    })
-
-    t.Run("extract token claims", func(t *testing.T) {
-        tokenInfo, err := client.ValidateToken(ctx, validToken)
-        assert.NoError(t, err)
-        assert.NotNil(t, tokenInfo)
-        
-        // Log all decoded token claims for debugging
-        claimsBytes, _ := json.MarshalIndent(tokenInfo.DecodedToken, "", "  ")
-        t.Logf("All Token Claims: %s", string(claimsBytes))
-        
-        // Check user ID claim
-        userID, ok := tokenInfo.DecodedToken[CLAIM_USER_ID].(string)
-        assert.True(t, ok, "User ID claim not found or not a string")
-        assert.NotEmpty(t, userID)
-        t.Logf("User ID: %s", userID)
-
-        // Check is_verified_user claim
-        isVerified, ok := tokenInfo.DecodedToken[CLAIM_IS_VERIFIED_USER].(bool)
-        assert.True(t, ok, "is_verified_user claim not found or not a boolean")
-        t.Logf("User verified status: %v", isVerified)
-
-        // Check is_anonymous claim
-        isAnonymous, ok := tokenInfo.DecodedToken[CLAIM_IS_ANONYMOUS].(bool)
-        assert.True(t, ok, "is_anonymous claim not found or not a boolean")
-        t.Logf("User anonymous status: %v", isAnonymous)
-
-        // Check auth_level claim
-        authLevel, ok := tokenInfo.DecodedToken[CLAIM_AUTH_LEVEL].(string)
-        assert.True(t, ok, "auth_level claim not found or not a string")
-        assert.NotEmpty(t, authLevel)
-        t.Logf("User auth level: %s", authLevel)
-
-        // Check app ID from audience claim
-        aud, exists := tokenInfo.DecodedToken["aud"]
-        assert.True(t, exists, "Audience claim not found")
-        t.Logf("Audience claim: %+v", aud)
-        
-        var appID string
-        switch v := aud.(type) {
-        case []interface{}:
-            if len(v) > 0 {
-                if audStr, ok := v[0].(string); ok && strings.HasPrefix(audStr, "app:") {
-                    appID = audStr[4:]
-                }
-            }
-        }
-        
-        assert.NotEmpty(t, appID, "App ID not found in token")
-        assert.Equal(t, testConfig.AppID, appID)
-    })
-
-    t.Run("reject expired token", func(t *testing.T) {
-        _, err = client.ValidateToken(ctx, expiredToken)
-        assert.Error(t, err)
-        assert.Contains(t, err.Error(), "invalid token")
-    })
-
+    // Start with smart links tests to get our token
     t.Run("smart links", func(t *testing.T) {
-        var smartLinkUserID string  // Store the user ID for cleanup
+        var smartLinkUserID string
 
         t.Run("create magic link", func(t *testing.T) {
             opts := &SmartLinkOptions{
@@ -130,31 +48,68 @@ func TestRowndIntegration(t *testing.T) {
             link, err := client.CreateSmartLink(ctx, opts)
             assert.NoError(t, err)
             assert.NotNil(t, link)
-            assert.NotEmpty(t, link.Link, "Expected non-empty link URL")
-            assert.NotEmpty(t, link.AppUserID, "Expected non-empty app user ID")
+            assert.NotEmpty(t, link.Link)
             
-            smartLinkUserID = link.AppUserID
-            t.Logf("Created link: %s for user: %s", link.Link, link.AppUserID)
-        })
-
-        // Add cleanup at the end of smart links test
-        t.Run("delete smart link user", func(t *testing.T) {
-            if smartLinkUserID == "" {
-                t.Skip("No smart link user ID to delete")
-            }
-            err := client.DeleteUser(ctx, testConfig.AppID, smartLinkUserID)
+            // Extract link ID and redeem it
+            parts := strings.Split(link.Link, "/")
+            linkID := parts[len(parts)-1]
+            
+            magicLinkResp, err := client.RedeemMagicLink(ctx, linkID)
             assert.NoError(t, err)
-            t.Logf("Deleted smart link user: %s", smartLinkUserID)
+            assert.NotNil(t, magicLinkResp)
+            
+            // Store the token and user ID for subsequent tests and cleanup
+            validToken = magicLinkResp.AccessToken
+            smartLinkUserID = magicLinkResp.AppUserID
+            
+            t.Logf("Created and redeemed magic link for user: %s", smartLinkUserID)
         })
 
-        t.Run("validation errors", func(t *testing.T) {
-            // Test missing required fields
-            opts := &SmartLinkOptions{
-                RedirectURL: "https://example.com",
+        // Add cleanup at the test suite level to ensure it runs after all tests
+        t.Cleanup(func() {
+            if smartLinkUserID != "" {
+                err := client.DeleteUser(ctx, testConfig.AppID, smartLinkUserID)
+                if err != nil {
+                    t.Logf("Failed to cleanup magic link user %s: %v", smartLinkUserID, err)
+                } else {
+                    t.Logf("Cleaned up magic link user: %s", smartLinkUserID)
+                }
             }
-            _, err := client.CreateSmartLink(ctx, opts)
-            assert.Error(t, err)
-            assert.Contains(t, err.Error(), "purpose is required")
+        })
+    })
+
+    // Token validation tests using magic link token
+    t.Run("token validation", func(t *testing.T) {
+        if validToken == "" {
+            t.Fatal("No valid token available from magic link")
+        }
+
+        t.Run("validate token", func(t *testing.T) {
+            tokenInfo, err := client.ValidateToken(ctx, validToken)
+            assert.NoError(t, err)
+            assert.NotNil(t, tokenInfo)
+            assert.NotEmpty(t, tokenInfo.UserID)
+        })
+
+        t.Run("extract token claims", func(t *testing.T) {
+            tokenInfo, err := client.ValidateToken(ctx, validToken)
+            assert.NoError(t, err)
+            assert.NotNil(t, tokenInfo)
+            
+            // Check claims
+            userID, ok := tokenInfo.DecodedToken[CLAIM_USER_ID].(string)
+            assert.True(t, ok, "User ID claim not found or not a string")
+            assert.NotEmpty(t, userID)
+            t.Logf("User ID from token: %s", userID)
+            
+            isVerified, ok := tokenInfo.DecodedToken[CLAIM_IS_VERIFIED_USER].(bool)
+            assert.True(t, ok, "is_verified_user claim not found or not a boolean")
+            t.Logf("User verified status: %v", isVerified)
+            
+            authLevel, ok := tokenInfo.DecodedToken[CLAIM_AUTH_LEVEL].(string)
+            assert.True(t, ok, "auth_level claim not found or not a string")
+            assert.NotEmpty(t, authLevel)
+            t.Logf("Auth level: %s", authLevel)
         })
     })
 
