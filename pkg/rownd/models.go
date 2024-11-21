@@ -4,10 +4,14 @@ import "time"
 
 // User represents a Rownd user
 type User struct {
-    ID        string                 `json:"id,omitempty"`
-    Data      map[string]interface{} `json:"data"`
-    CreatedAt time.Time             `json:"created_at,omitempty"`
-    UpdatedAt time.Time             `json:"updated_at,omitempty"`
+    ID            string                 `json:"rownd_user"`
+    State         string                 `json:"state"`
+    AuthLevel     string                 `json:"auth_level"`
+    Data          map[string]interface{} `json:"data"`
+    VerifiedData  map[string]interface{} `json:"verified_data"`
+    Groups        []GroupMembership      `json:"groups"`
+    Meta          UserMeta               `json:"meta"`
+    ConnectionMap map[string]interface{} `json:"connection_map"`
 }
 
 // TokenValidation represents the response from token validation
@@ -51,4 +55,20 @@ type WellKnownConfig struct {
     ResponseTypesSupported []string `json:"response_types_supported"`
     SubjectTypesSupported []string `json:"subject_types_supported"`
     ScopesSupported      []string `json:"scopes_supported"`
+}
+
+type UserMeta struct {
+    Created                      time.Time `json:"created"`
+    Modified                     time.Time `json:"modified"`
+    FirstSignIn                  time.Time `json:"first_sign_in"`
+    FirstSignInMethod           string    `json:"first_sign_in_method"`
+    LastSignIn                   time.Time `json:"last_sign_in"`
+    LastSignInMethod            string    `json:"last_sign_in_method"`
+    LastActive                   time.Time `json:"last_active"`
+    LastPasskeyRegistrationPrompt time.Time `json:"last_passkey_registration_prompt"`
+}
+
+type GroupMembership struct {
+    Group  Group       `json:"group"`
+    Member GroupMember `json:"member"`
 }

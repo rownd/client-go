@@ -8,7 +8,6 @@ import (
     "context"
     "strings"
     "io"
-    "mime/multipart"
 )
 
 func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenValidationResponse) (*User, error) {
@@ -59,6 +58,11 @@ func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenVal
     }
     defer resp.Body.Close()
 
+    // Read and log the response body for debugging
+    respBody, err := io.ReadAll(resp.Body)
+    fmt.Printf("\nGet User Response Body: %s\n", string(respBody))
+    resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
+
     if resp.StatusCode != http.StatusOK {
         var apiErr APIResponse
         if err := json.NewDecoder(resp.Body).Decode(&apiErr); err != nil {
@@ -72,17 +76,43 @@ func (c *Client) GetUser(ctx context.Context, userID string, tokenInfo *TokenVal
         return nil, fmt.Errorf("failed to decode user response: %w", err)
     }
 
+    // Set the ID from the input userID since it's not in the response
+    user.ID = userID
+
     return &user, nil
 }
 
-func (c *Client) UpdateUser(ctx context.Context, appID string, userID string, data map[string]interface{}) (*User, error) {
-    payload := map[string]interface{}{
-        "data": data,
+func (c *Client) UpdateUser(ctx context.Context, appID string, userID string, userData map[string]interface{}) (*User, error) {
+    if appID == "" {
+        return nil, fmt.Errorf("app ID is required")
     }
 
-    req, err := http.NewRequestWithContext(ctx, "PUT", 
-        fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID), 
-        jsonReader(payload))
+    // For new users without ID, use __UUID__ to have Rownd generate one
+    if userID == "" {
+        userID = "__UUID__"
+    }
+
+    endpoint := fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID)
+    fmt.Printf("\nAPI Request URL: %s\n", endpoint)
+
+    // Use the userData directly if it has a "data" wrapper, otherwise wrap it
+    var payload map[string]interface{}
+    if _, hasData := userData["data"]; hasData {
+        payload = userData
+    } else {
+        payload = map[string]interface{}{
+            "data": userData,
+        }
+    }
+
+    // Log request details
+    payloadBytes, _ := json.MarshalIndent(payload, "", "  ")
+    fmt.Printf("Request Headers:\n")
+    fmt.Printf("  x-rownd-app-key: %s\n", c.AppKey)
+    fmt.Printf("  x-rownd-app-secret: %s...\n", c.AppSecret[:10])
+    fmt.Printf("Request Payload:\n%s\n", string(payloadBytes))
+
+    req, err := http.NewRequestWithContext(ctx, "PUT", endpoint, jsonReader(payload))
     if err != nil {
         return nil, NewError(ErrAPI, "failed to create request", err)
     }
@@ -91,12 +121,19 @@ func (c *Client) UpdateUser(ctx context.Context, appID string, userID string, da
 }
 
 func (c *Client) PatchUser(ctx context.Context, appID string, userID string, data map[string]interface{}) (*User, error) {
+    if appID == "" {
+        return nil, fmt.Errorf("app ID is required")
+    }
+    if userID == "" {
+        return nil, fmt.Errorf("user ID is required")
+    }
+
     payload := map[string]interface{}{
         "data": data,
     }
 
     req, err := http.NewRequestWithContext(ctx, "PATCH", 
-        fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID), 
+        fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID),
         jsonReader(payload))
     if err != nil {
         return nil, NewError(ErrAPI, "failed to create request", err)
@@ -127,22 +164,20 @@ func (c *Client) GetUserField(ctx context.Context, appID string, userID string, 
 }
 
 func (c *Client) UpdateUserField(ctx context.Context, appID string, userID string, field string, value interface{}) error {
-    form := new(bytes.Buffer)
-    writer := multipart.NewWriter(form)
-    
-    if err := writer.WriteField("value", fmt.Sprintf("%v", value)); err != nil {
-        return NewError(ErrAPI, "failed to write form field", err)
+    payload := map[string]interface{}{
+        "value": value,
     }
-    writer.Close()
 
     req, err := http.NewRequestWithContext(ctx, "PUT", 
         fmt.Sprintf("%s/applications/%s/users/%s/data/fields/%s", c.BaseURL, appID, userID, field), 
-        form)
+        jsonReader(payload))
     if err != nil {
         return NewError(ErrAPI, "failed to create request", err)
     }
 
-    req.Header.Set("Content-Type", writer.FormDataContentType())
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-rownd-app-key", c.AppKey)
+    req.Header.Set("x-rownd-app-secret", c.AppSecret)
     
     _, err = c.doRequest(req)
     return err
@@ -160,9 +195,18 @@ func (c *Client) doUserRequest(req *http.Request) (*User, error) {
 
     resp, err := c.HTTPClient.Do(req)
     if err != nil {
+        fmt.Printf("Request failed: %v\n", err)
         return nil, NewError(ErrNetwork, "request failed", err)
     }
     defer resp.Body.Close()
+
+    // Read and log the response body
+    respBody, err := io.ReadAll(resp.Body)
+    fmt.Printf("\nResponse Status: %d\n", resp.StatusCode)
+    fmt.Printf("Response Body: %s\n", string(respBody))
+
+    // Create new reader from the response body for further processing
+    resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
 
     if resp.StatusCode != http.StatusOK {
         return nil, handleErrorResponse(resp)
@@ -173,5 +217,40 @@ func (c *Client) doUserRequest(req *http.Request) (*User, error) {
         return nil, NewError(ErrAPI, "failed to decode response", err)
     }
 
+    // Set the ID from the user_id in the data field
+    if userID, ok := user.Data["user_id"].(string); ok {
+        user.ID = userID
+    }
+
     return &user, nil
+}
+
+// DeleteUser deletes a user and all associated data
+func (c *Client) DeleteUser(ctx context.Context, appID string, userID string) error {
+    req, err := http.NewRequestWithContext(ctx, "DELETE",
+        fmt.Sprintf("%s/applications/%s/users/%s/data", c.BaseURL, appID, userID),
+        nil)
+    if err != nil {
+        return NewError(ErrAPI, "failed to create request", err)
+    }
+
+    req.Header.Set("x-rownd-app-key", c.AppKey)
+    req.Header.Set("x-rownd-app-secret", c.AppSecret)
+
+    resp, err := c.HTTPClient.Do(req)
+    if err != nil {
+        return NewError(ErrNetwork, "request failed", err)
+    }
+    defer resp.Body.Close()
+
+    // 204 No Content is a success response for DELETE
+    if resp.StatusCode == http.StatusNoContent {
+        return nil
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        return handleErrorResponse(resp)
+    }
+
+    return nil
 }

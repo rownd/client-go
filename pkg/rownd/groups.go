@@ -5,6 +5,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
+    "io"
     "net/http"
     "time"
 )
@@ -297,6 +298,12 @@ func (c *Client) doGroupInviteResponse(req *http.Request) (*GroupInviteResponse,
     }
     defer resp.Body.Close()
 
+    // Read and log response body
+    respBody, err := io.ReadAll(resp.Body)
+    fmt.Printf("\nInvite Response Status: %d\n", resp.StatusCode)
+    fmt.Printf("Invite Response Body: %s\n", string(respBody))
+    resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
+
     if resp.StatusCode != http.StatusOK {
         return nil, handleErrorResponse(resp)
     }
@@ -442,10 +449,45 @@ func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
         return nil, NewError(ErrNetwork, "request failed", err)
     }
 
+    // 204 No Content is a success response for DELETE
+    if resp.StatusCode == http.StatusNoContent {
+        return resp, nil
+    }
+
     if resp.StatusCode != http.StatusOK {
         defer resp.Body.Close()
         return nil, handleErrorResponse(resp)
     }
 
     return resp, nil
+}
+
+// DeleteGroup deletes a group and all associated data
+func (c *Client) DeleteGroup(ctx context.Context, appID string, groupID string) error {
+    req, err := http.NewRequestWithContext(ctx, "DELETE",
+        fmt.Sprintf("%s/applications/%s/groups/%s", c.BaseURL, appID, groupID),
+        nil)
+    if err != nil {
+        return NewError(ErrAPI, "failed to create request", err)
+    }
+
+    req.Header.Set("x-rownd-app-key", c.AppKey)
+    req.Header.Set("x-rownd-app-secret", c.AppSecret)
+
+    resp, err := c.HTTPClient.Do(req)
+    if err != nil {
+        return NewError(ErrNetwork, "request failed", err)
+    }
+    defer resp.Body.Close()
+
+    // 204 No Content is a success response for DELETE
+    if resp.StatusCode == http.StatusNoContent {
+        return nil
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        return handleErrorResponse(resp)
+    }
+
+    return nil
 }

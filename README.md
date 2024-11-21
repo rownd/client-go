@@ -51,7 +51,7 @@ The SDK provides the following main methods:
 ### User Management
 - `GetUser(ctx context.Context, userID string, tokenInfo *TokenValidationResponse) (*User, error)`
 - `UpdateUser(ctx context.Context, userID string, data map[string]interface{}) (*User, error)`
-- `DeleteUser(ctx context.Context, userID string) error`
+- `DeleteUser(ctx context.Context, appID string, userID string) error`
 
 ### Smart Links
 - `CreateSmartLink(ctx context.Context, opts *SmartLinkOptions) (*SmartLink, error)`

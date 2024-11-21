@@ -16,8 +16,15 @@ import (
 )
 
 const (
-	CLAIM_USER_ID = "https://auth.rownd.io/app_user_id"
+	CLAIM_USER_ID          = "https://auth.rownd.io/app_user_id"
 	CLAIM_IS_VERIFIED_USER = "https://auth.rownd.io/is_verified_user"
+	CLAIM_IS_ANONYMOUS     = "https://auth.rownd.io/is_anonymous"
+	CLAIM_AUTH_LEVEL       = "https://auth.rownd.io/auth_level"
+
+	AUTH_LEVEL_INSTANT       = "instant"
+	AUTH_LEVEL_UNVERIFIED    = "unverified"
+	AUTH_LEVEL_GUEST         = "guest"
+	AUTH_LEVEL_VERIFIED      = "verified"
 )
 
 type TokenValidationResponse struct {

@@ -9,28 +9,18 @@ import (
 )
 
 type SmartLinkOptions struct {
-    Email            string                 `json:"email,omitempty"`
-    Phone            string                 `json:"phone,omitempty"`
+    Purpose          string                 `json:"purpose"`          // "auth"
+    VerificationType string                 `json:"verification_type"` // "email" or "phone"
+    Data             map[string]interface{} `json:"data"`
     RedirectURL      string                 `json:"redirect_url"`
-    Data             map[string]interface{} `json:"data,omitempty"`
-    PostRedirectURL  string                 `json:"post_redirect_url,omitempty"`
-    AppID            string                 `json:"app_id,omitempty"`
-    Type             string                 `json:"type,omitempty"`            // "magic_link" or "verification"
-    Intent           string                 `json:"intent,omitempty"`          // "sign_in" or "sign_up"
-    ExpiresIn        int                    `json:"expires_in,omitempty"`      // seconds
-    AutoSignIn       bool                   `json:"auto_sign_in,omitempty"`
-    Purpose          string                 `json:"purpose,omitempty"`         // "auth"
-    VerificationType string                 `json:"verification_type,omitempty"` // "email" or "phone"
     UserID           string                 `json:"user_id,omitempty"`
     Expiration       string                 `json:"expiration,omitempty"`      // e.g. "30d"
     GroupToJoin      string                 `json:"group_to_join,omitempty"`
 }
 
 type SmartLink struct {
-    Link           string `json:"link"`
-    AppUserID      string `json:"app_user_id"`
-    ExpiresAt      string `json:"expires_at,omitempty"`
-    VerificationID string `json:"verification_id,omitempty"`
+    Link      string `json:"link"`
+    AppUserID string `json:"app_user_id"`
 }
 
 func (c *Client) CreateSmartLink(ctx context.Context, opts *SmartLinkOptions) (*SmartLink, error) {
@@ -38,8 +28,16 @@ func (c *Client) CreateSmartLink(ctx context.Context, opts *SmartLinkOptions) (*
         return nil, NewError(ErrValidation, "redirect_url is required", nil)
     }
 
-    if opts.Email == "" && opts.Phone == "" {
-        return nil, NewError(ErrValidation, "either email or phone is required", nil)
+    if opts.Purpose == "" {
+        return nil, NewError(ErrValidation, "purpose is required", nil)
+    }
+
+    if opts.VerificationType == "" {
+        return nil, NewError(ErrValidation, "verification_type is required", nil)
+    }
+
+    if opts.Data == nil || (opts.VerificationType == "email" && opts.Data["email"] == "") {
+        return nil, NewError(ErrValidation, "data.email is required for email verification", nil)
     }
 
     payload, err := json.Marshal(opts)
