@@ -1,4 +1,4 @@
-package rownd
+package rownd_test
 
 import (
     "context"
@@ -8,15 +8,16 @@ import (
     "time"
     
     "github.com/stretchr/testify/assert"
-    rowndtesting "github.com/rgthelen/rownd-go-test/pkg/rownd/testing"
+    "github.com/rgthelen/rownd-go-test/internal/testutils"
+    "github.com/rgthelen/rownd-go-test/pkg/rownd"
 )
 
 func TestRowndIntegration(t *testing.T) {
     // Get test configuration
-    testConfig := rowndtesting.GetTestConfig()
+    testConfig := testutils.GetTestConfig()
     var validToken string // Will be set after magic link redemption
 
-    client, err := NewClient(&ClientConfig{
+    client, err := rownd.NewClient(&rownd.ClientConfig{
         AppKey:    testConfig.AppKey,
         AppSecret: testConfig.AppSecret,
         AppID:     testConfig.AppID,
@@ -34,7 +35,7 @@ func TestRowndIntegration(t *testing.T) {
         var smartLinkUserID string
 
         t.Run("create magic link", func(t *testing.T) {
-            opts := &SmartLinkOptions{
+            opts := &rownd.SmartLinkOptions{
                 Purpose:          "auth",
                 VerificationType: "email",
                 Data: map[string]interface{}{
@@ -54,7 +55,7 @@ func TestRowndIntegration(t *testing.T) {
             parts := strings.Split(link.Link, "/")
             linkID := parts[len(parts)-1]
             
-            magicLinkResp, err := client.RedeemMagicLink(ctx, linkID)
+            magicLinkResp, err := testutils.RedeemMagicLink(ctx, client, linkID)
             assert.NoError(t, err)
             assert.NotNil(t, magicLinkResp)
             
@@ -97,16 +98,16 @@ func TestRowndIntegration(t *testing.T) {
             assert.NotNil(t, tokenInfo)
             
             // Check claims
-            userID, ok := tokenInfo.DecodedToken[CLAIM_USER_ID].(string)
+            userID, ok := tokenInfo.DecodedToken[rownd.CLAIM_USER_ID].(string)
             assert.True(t, ok, "User ID claim not found or not a string")
             assert.NotEmpty(t, userID)
             t.Logf("User ID from token: %s", userID)
             
-            isVerified, ok := tokenInfo.DecodedToken[CLAIM_IS_VERIFIED_USER].(bool)
+            isVerified, ok := tokenInfo.DecodedToken[rownd.CLAIM_IS_VERIFIED_USER].(bool)
             assert.True(t, ok, "is_verified_user claim not found or not a boolean")
             t.Logf("User verified status: %v", isVerified)
             
-            authLevel, ok := tokenInfo.DecodedToken[CLAIM_AUTH_LEVEL].(string)
+            authLevel, ok := tokenInfo.DecodedToken[rownd.CLAIM_AUTH_LEVEL].(string)
             assert.True(t, ok, "auth_level claim not found or not a string")
             assert.NotEmpty(t, authLevel)
             t.Logf("Auth level: %s", authLevel)
@@ -199,7 +200,7 @@ func TestRowndIntegration(t *testing.T) {
     var groupName = "Test Group"
 
     t.Run("create group", func(t *testing.T) {
-        req := &CreateGroupRequest{
+        req := &rownd.CreateGroupRequest{
             Name:            groupName,
             AdmissionPolicy: "open",
         }
@@ -249,7 +250,7 @@ func TestRowndIntegration(t *testing.T) {
 
     var memberID string
     t.Run("add user to group", func(t *testing.T) {
-        req := &CreateGroupMemberRequest{
+        req := &rownd.CreateGroupMemberRequest{
             UserID: testUserID,
             Roles:  []string{"member", "owner"},
             State:  "active",
@@ -264,7 +265,7 @@ func TestRowndIntegration(t *testing.T) {
     })
 
     t.Run("update group member", func(t *testing.T) {
-        req := &CreateGroupMemberRequest{
+        req := &rownd.CreateGroupMemberRequest{
             UserID: testUserID,
             Roles:  []string{"member", "owner", "admin"},
             State:  "active",
@@ -277,7 +278,7 @@ func TestRowndIntegration(t *testing.T) {
     })
 
     t.Run("create group invite", func(t *testing.T) {
-        req := &CreateGroupInviteRequest{
+        req := &rownd.CreateGroupInviteRequest{
             Email:       "invite@example.com",
             Roles:       []string{"member"},
             RedirectURL: "https://example.com/accept",
@@ -309,7 +310,7 @@ func TestRowndIntegration(t *testing.T) {
         secondUserID = user.ID  // Store the ID for cleanup
 
         // Add them to the group as owner
-        memberReq := &CreateGroupMemberRequest{
+        memberReq := &rownd.CreateGroupMemberRequest{
             UserID: user.ID,
             Roles:  []string{"member", "owner"},
             State:  "active",
