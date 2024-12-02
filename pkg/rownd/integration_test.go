@@ -3,6 +3,7 @@ package rownd_test
 import (
     "context"
     "encoding/json"
+    "fmt"
     "strings"
     "testing"
     "time"
@@ -373,5 +374,59 @@ func TestRowndIntegration(t *testing.T) {
         err := client.DeleteUser(ctx, testConfig.AppID, secondUserID)
         assert.NoError(t, err)
         t.Logf("Deleted second test user: %s", secondUserID)
+    })
+
+    t.Run("lookup user", func(t *testing.T) {
+        // Create a random email for testing
+        randomEmail := fmt.Sprintf("test.lookup.%d@example.com", time.Now().UnixNano())
+        
+        // Create a new user with the random email
+        userData := map[string]interface{}{
+            "data": map[string]interface{}{
+                "email": randomEmail,
+                "first_name": "Lookup",
+                "last_name": "Test",
+            },
+        }
+
+        user, err := client.UpdateUser(ctx, testConfig.AppID, "", userData)
+        assert.NoError(t, err)
+        assert.NotNil(t, user)
+        assert.NotEmpty(t, user.ID)
+        createdUserID := user.ID
+
+        // Add a small delay to allow for data propagation
+        time.Sleep(2 * time.Second)
+
+        // Lookup the user by email
+        lookupOpts := &rownd.UserListOptions{
+            LookupValue: randomEmail,
+            Fields: []string{"email"},
+        }
+
+        users, err := client.LookupUsers(ctx, testConfig.AppID, lookupOpts)
+        assert.NoError(t, err)
+        assert.NotNil(t, users)
+        
+        // Debug output
+        t.Logf("Lookup results - Total: %d, Results length: %d", users.TotalResults, len(users.Results))
+        t.Logf("Looking up email: %s", randomEmail)
+
+        // Check if we found any users
+        if assert.Greater(t, len(users.Results), 0, "No users found for email %s", randomEmail) {
+            // Verify the looked-up user matches the created user
+            foundUser := users.Results[0]
+            assert.Equal(t, createdUserID, foundUser.ID)
+            assert.Equal(t, randomEmail, foundUser.Data["email"])
+            assert.Equal(t, "Lookup", foundUser.Data["first_name"])
+            assert.Equal(t, "Test", foundUser.Data["last_name"])
+        }
+
+        // Add delay before cleanup
+        time.Sleep(5 * time.Second)
+
+        // Cleanup
+        err = client.DeleteUser(ctx, testConfig.AppID, createdUserID)
+        assert.NoError(t, err)
     })
 }

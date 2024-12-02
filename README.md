@@ -63,11 +63,27 @@ log.Fatal(err)
 ```go
 // Get user
 user, err := client.GetUser(ctx, "user_id", tokenInfo)
+
 // Update user
 updatedUser, err := client.UpdateUser(ctx, appID, userID, userData)
+
+// List/lookup users
+users, err := client.LookupUsers(ctx, appID, &rownd.UserListOptions{
+    LookupValue: "user@example.com",
+    Fields: []string{"email"},
+})
+
 // Delete user
 err := client.DeleteUser(ctx, appID, userID)
 ```
+
+#### List User Options
+- `LookupValue`: Value to search for (email/phone)
+- `Fields`: Fields to include in response
+- `PageSize`: Number of results per page (max 1000)
+- `After`: ID of last resource from previous page
+- `Sort`: Sort direction ("asc" or "desc")
+- `IncludeDuplicates`: Include multiple matches
 
 ### Group Management
 ```go

@@ -92,6 +92,13 @@ type CreateGroupMemberRequest struct {
     State  string   `json:"state"`
 }
 
+// UserListResponse represents the paginated response from listing users
+type UserListResponse struct {
+    TotalResults int    `json:"total_results"`
+    Results      []User `json:"results"`
+}
+
+
 // CreateGroup creates a new group
 func (c *Client) CreateGroup(ctx context.Context, appID string, req *CreateGroupRequest) (*Group, error) {
     payload, err := json.Marshal(req)
