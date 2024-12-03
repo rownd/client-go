@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rownd Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --background: #f9fafb;
+            --card-bg: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0 32px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .auth-button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .groups-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 24px;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .groups-table th,
+        .groups-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .groups-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .groups-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .groups-table td code {
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+            max-width: 600px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: flex-end;
+        }
+
+        .input-row input,
+        .input-row select {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+        }
+
+        .input-row button {
+            flex-shrink: 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            margin-bottom: 32px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 32px 0;
+        }
+
+        .output-container {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .token-section {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .token-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .token-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .token-value {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .token-value code {
+            font-family: 'Monaco', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+
+        .inspect-button {
+            font-size: 0.875rem;
+            padding: 8px 16px;
+            background: var(--background);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .inspect-button:hover {
+            background: var(--border-color);
+            transform: none;
+        }
+
+        .groups-container {
+            margin: 24px 0;
+        }
+
+        .groups-table-container {
+            margin-bottom: 24px;
+        }
+
+        .output-container pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Monaco', monospace;
+            font-size: 0.75rem;
+        }
+
+        .invite-result {
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .invite-link-section {
+            margin-bottom: 24px;
+        }
+
+        .invite-link-section h4,
+        .invite-details h4 {
+            margin: 0 0 12px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .copy-link-container {
+            display: flex;
+            gap: 8px;
+        }
+
+        .invite-link-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: 'Monaco', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: text;
+        }
+
+        .copy-button {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            background: var(--background);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .copy-button:hover {
+            background: var(--border-color);
+            transform: none;
+        }
+
+        .invite-details pre {
+            margin: 0;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rownd API Demo</h1>
+
+    <button
+        data-rownd-sign-in-trigger
+        data-rownd-authenticated-text="Sign out"
+        class="auth-button"
+    >
+        Sign in
+    </button>
+
+    <div data-rownd-if-authenticated>
+        <div class="container">
+            <div class="card">
+                <h2 class="section-title">User Authentication</h2>
+                <div class="button-group">
+                    <button onclick="validateToken()">Validate Token</button>
+                    <button onclick="fetchUserData()">Fetch User Data</button>
+                </div>
+                
+                <div class="input-group">
+                    <div class="input-row">
+                        <input type="text" id="first-name" placeholder="First Name" />
+                        <button onclick="updateUserFirstName()">Update Name</button>
+                    </div>
+                </div>
+                
+                <div class="output-container" id="validation-result">
+                    Validation results will appear here
+                </div>
+                <div class="output-container" id="user-result">
+                    User data will appear here
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="section-title">Groups Management</h2>
+                <div class="button-group">
+                    <button onclick="listGroups()">Refresh Groups</button>
+                </div>
+
+                <div class="groups-container">
+                    <div id="groups-table" class="groups-table-container">
+                        <!-- Table will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <h3>Create New Group</h3>
+                <div class="input-group">
+                    <div class="input-row">
+                        <input type="text" id="group-name" placeholder="Group name" />
+                        <button onclick="createGroup()">Create Group</button>
+                    </div>
+                    <div id="create-group-result" class="output-container">
+                        Create group results will appear here
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <h3>Create Group Invite</h3>
+                <div class="input-group">
+                    <div class="input-row">
+                        <select id="group-select">
+                            <option value="">Select a group</option>
+                        </select>
+                        <input type="email" id="invite-email" placeholder="Email address" />
+                    </div>
+                    <div class="input-row">
+                        <select id="invite-role">
+                            <option value="owner">Owner</option>
+                            <option value="admin">Admin</option>
+                            <option value="editor">Editor</option>
+                            <option value="viewer">Viewer</option>
+                        </select>
+                        <button onclick="createGroupInvite()">Create Invite</button>
+                    </div>
+                    <div id="create-invite-result" class="output-container">
+                        Invite results will appear here
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        !function () { 
+            var e = window._rphConfig = window._rphConfig || [];
+            let t = window.localStorage.getItem("rph_base_url_override") || "https://hub.rownd.io"; e.push(["setBaseUrl", t]);
+            var r = document, s = r.createElement("script"), m = r.createElement("script"), a = r.getElementsByTagName("script")[0];
+            s.type = "text/javascript", s.noModule = !0, s.async = !0, s.src = t + "/static/scripts/rph.js", a.parentNode.insertBefore(s, a);
+            m.type = "module", m.async = !0, m.src = t + "/static/scripts/rph.mjs", a.parentNode.insertBefore(m, a);
+        } ();
+        _rphConfig.push(["setAppKey", "ROWND_APP_KEY" ]);
+
+        async function handleApiError(response) {
+            const data = await response.json();
+            let errorMessage = 'An unexpected error occurred';
+            
+            if (data.message) {
+                errorMessage = data.message;
+                if (data.detail) {
+                    errorMessage += `: ${data.detail}`;
+                }
+            }
+            
+            throw new Error(errorMessage);
+        }
+
+        async function validateToken() {
+            const validationResult = document.getElementById('validation-result');
+            try {
+                const token = await window.rownd.getAccessToken();
+                console.log('Token:', token);
+                const response = await fetch('/validate', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to validate token');
+                }
+
+                // Create a formatted output with the token section
+                const outputHTML = `
+                    <div class="token-section">
+                        <div class="token-header">
+                            <h3>Access Token</h3>
+                            <button onclick="window.open('https://jwt.is/?value=${data.access_token}', '_blank')" class="inspect-button">
+                                Inspect Token
+                            </button>
+                        </div>
+                        <div class="token-value">
+                            <code>${data.access_token}</code>
+                        </div>
+                        <h3>Decoded Token Data</h3>
+                        <pre>${JSON.stringify(data.decoded_token, null, 2)}</pre>
+                    </div>
+                `;
+                
+                validationResult.innerHTML = outputHTML;
+            } catch (error) {
+                validationResult.innerHTML = `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        async function fetchUserData() {
+            const userResult = document.getElementById('user-result');
+            try {
+                const token = await window.rownd.getAccessToken();
+                console.log('Token:', token);
+                const response = await fetch('/user', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch user data');
+                }
+
+                const formattedData = JSON.stringify(data, null, 2);
+                userResult.innerHTML = `<pre>${formattedData}</pre>`;
+            } catch (error) {
+                userResult.innerHTML = `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        async function listGroups() {
+            const groupsTableContainer = document.getElementById('groups-table');
+            const groupSelect = document.getElementById('group-select');
+            try {
+                const token = await window.rownd.getAccessToken();
+                console.log('Token:', token);
+                const response = await fetch('/groups', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to list groups');
+                }
+
+                // Update select dropdown
+                groupSelect.innerHTML = '<option value="">Select a group</option>';
+                data.results.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.id;
+                    option.textContent = group.name;
+                    groupSelect.appendChild(option);
+                });
+
+                // Create table view
+                const tableHTML = `
+                    <table class="groups-table">
+                        <thead>
+                            <tr>
+                                <th>Group Name</th>
+                                <th>Group ID</th>
+                                <th>Member IDs</th>
+                                <th>Member Roles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.results.map(group => `
+                                <tr>
+                                    <td>${group.name}</td>
+                                    <td><code>${group.id}</code></td>
+                                    <td>${group.members.map(m => `<code>${m.user_id}</code>`).join('<br>')}</td>
+                                    <td>${group.members.map(m => m.roles.join(', ')).join('<br>')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                groupsTableContainer.innerHTML = tableHTML;
+            } catch (error) {
+                groupsTableContainer.innerHTML = `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        async function createGroup() {
+            const createGroupResult = document.getElementById('create-group-result');
+            const groupNameInput = document.getElementById('group-name');
+            
+            try {
+                const token = await window.rownd.getAccessToken();
+                console.log('Token:', token);
+                const response = await fetch('/groups/create', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: groupNameInput.value || "Test Group " + new Date().toISOString(),
+                        admission_policy: "open"
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create group');
+                }
+
+                createGroupResult.textContent = JSON.stringify(data, null, 2);
+                groupNameInput.value = '';
+            } catch (error) {
+                createGroupResult.innerHTML = `Error: ${error.message}`;
+                createGroupResult.classList.add('error');
+            }
+        }
+
+        async function createGroupInvite() {
+            const createInviteResult = document.getElementById('create-invite-result');
+            const groupSelect = document.getElementById('group-select');
+            const emailInput = document.getElementById('invite-email');
+            const roleSelect = document.getElementById('invite-role');
+            
+            try {
+                if (!groupSelect.value) {
+                    throw new Error('Please select a group first');
+                }
+
+                const token = await window.rownd.getAccessToken();
+                console.log('Token:', token);
+                const requestBody = {
+                    roles: [roleSelect.value],
+                    redirect_url: window.location.origin
+                };
+                
+                if (emailInput.value) {
+                    requestBody.email = emailInput.value;
+                }
+
+                const response = await fetch(`/groups/invite?group_id=${groupSelect.value}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create invite');
+                }
+
+                const formattedOutput = `
+                    <div class="invite-result">
+                        <div class="invite-link-section">
+                            <h4>Quick Copy Invite Link</h4>
+                            <div class="copy-link-container">
+                                <input type="text" readonly value="${data.link}" class="invite-link-input" />
+                                <button onclick="copyInviteLink(this)" class="copy-button">Copy</button>
+                            </div>
+                        </div>
+                        <div class="invite-details">
+                            <h4>Developer Reference</h4>
+                            <pre>${JSON.stringify(data.invitation, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+                
+                createInviteResult.innerHTML = formattedOutput;
+                emailInput.value = '';
+                
+                await listGroups();
+            } catch (error) {
+                createInviteResult.innerHTML = `<div class="error">${error.message}</div>`;
+            }
+        }
+
+        function copyInviteLink(button) {
+            const input = button.parentElement.querySelector('.invite-link-input');
+            input.select();
+            document.execCommand('copy');
+            
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.textContent = 'Copy';
+            }, 2000);
+        }
+
+        async function updateUserFirstName() {
+            const userResult = document.getElementById('user-result');
+            const firstNameInput = document.getElementById('first-name');
+            
+            try {
+                if (!firstNameInput.value) {
+                    throw new Error('Please enter a first name');
+                }
+
+                const token = await window.rownd.getAccessToken();
+                console.log('Token:', token);
+                const response = await fetch('/user/field/first_name', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        value: firstNameInput.value
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to update first name');
+                }
+
+                await fetchUserData();
+                
+                firstNameInput.value = '';
+            } catch (error) {
+                userResult.innerHTML = `Error: ${error.message}`;
+                userResult.classList.add('error');
+            }
+        }
+
+        // Collapsible sections
+        document.querySelectorAll('.collapsible').forEach(button => {
+            button.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const content = this.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        });
+
+        function prettifyOutput(element, data) {
+            // Syntax highlighting function
+            const syntaxHighlight = (json) => {
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+                    let cls = 'number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'key';
+                        } else {
+                            cls = 'string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'null';
+                    }
+                    return `<span class="${cls}">${match}</span>`;
+                });
+            };
+
+            const formatted = JSON.stringify(data, null, 2);
+            element.innerHTML = `<pre>${syntaxHighlight(formatted)}</pre>`;
+        }
+    </script>
+</body>
+</html>
