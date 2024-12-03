@@ -6,6 +6,7 @@ import (
     "fmt"
     "log"
     "os"
+    "time"
     
     "github.com/rgthelen/rownd-go-test/pkg/rownd"
 )
@@ -31,10 +32,10 @@ func main() {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
 
-    client, err := rownd.NewClient(&rownd.Config{
-        AppKey:    *appKey,
-        AppSecret: *appSecret,
-    })
+    client, err := rownd.NewClient(
+        rownd.WithAppKey(*appKey),
+        rownd.WithAppSecret(*appSecret),
+    )
     if err != nil {
         log.Fatalf("Failed to create client: %v", err)
     }
@@ -47,13 +48,15 @@ func main() {
 
 func run(ctx context.Context, client *rownd.Client, token string) error {
     // Validate token
-    tokenInfo, err := client.ValidateToken(ctx, token)
+    tokenInfo, err := client.Tokens.Validate(ctx, token)
     if err != nil {
         return fmt.Errorf("validate token: %w", err)
     }
 
     // Get user profile
-    user, err := client.GetUser(ctx, tokenInfo.UserID)
+    user, err := client.Users.Get(ctx, rownd.GetUserRequest{
+        UserID: tokenInfo.UserID,
+    })
     if err != nil {
         return fmt.Errorf("get user: %w", err)
     }

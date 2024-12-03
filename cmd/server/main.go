@@ -28,10 +28,10 @@ func main() {
     }
 
     // Create client
-    client, err := rownd.NewClient(&rownd.Config{
-        AppKey:    *appKey,
-        AppSecret: *appSecret,
-    })
+    client, err := rownd.NewClient(
+        rownd.WithAppKey(*appKey),
+        rownd.WithAppSecret(*appSecret),
+    )
     if err != nil {
         log.Fatalf("Failed to create client: %v", err)
     }
@@ -65,9 +65,6 @@ func main() {
 func setupServer(addr string, client *rownd.Client) *http.Server {
     mux := http.NewServeMux()
 
-    // Setup routes (referencing node/examples/express/server.js startLine: 10, endLine: 20)
-    mux.HandleFunc("/", handleHome)
-    mux.Handle("/dashboard", client.RequireAuth(handleDashboard))
 
     return &http.Server{
         Addr:    addr,
