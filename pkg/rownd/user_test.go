@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rgthelen/rownd-go-test/internal/testutils"
-	"github.com/rgthelen/rownd-go-test/pkg/rownd"
+	"github.com/rgthelen/rownd-go-sdk/internal/testutils"
+	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 	"github.com/stretchr/testify/assert"
 )
-
 
 func TestRowndUserOperations(t *testing.T) {
 	var createdUser *rownd.User
@@ -146,7 +145,7 @@ func TestRowndUserOperations(t *testing.T) {
 		// Lookup the user by email with all fields
 		users, err := client.Users.List(ctx, rownd.ListUsersRequest{
 			AppID:        testConfig.AppID,
-			Fields:       []string{"email", "first_name", "last_name", "user_id"},  // Request all needed fields
+			Fields:       []string{"email", "first_name", "last_name", "user_id"}, // Request all needed fields
 			LookupFilter: []string{randomEmail},
 		})
 		assert.NoError(t, err)

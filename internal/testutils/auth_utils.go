@@ -3,15 +3,15 @@ package testutils
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"encoding/base64"
 	"strings"
 
-	"github.com/rgthelen/rownd-go-test/pkg/rownd"
+	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 )
 
 // AuthTokens represents the tokens returned from auth operations
@@ -187,17 +187,17 @@ func ValidateTokenForTest(ctx context.Context, client *rownd.Client, token strin
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token format")
 	}
-	
+
 	claimsJSON, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode claims: %w", err)
 	}
-	
+
 	var claims TokenClaims
 	if err := json.Unmarshal(claimsJSON, &claims); err != nil {
 		return nil, fmt.Errorf("failed to parse claims: %w", err)
 	}
-	
+
 	return &TokenInfo{
 		Claims: claims,
 		UserID: claims.AppUserID,

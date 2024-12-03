@@ -4,11 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rgthelen/rownd-go-test/internal/testutils"
-	"github.com/rgthelen/rownd-go-test/pkg/rownd"
+	"github.com/rgthelen/rownd-go-sdk/internal/testutils"
+	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 	"github.com/stretchr/testify/assert"
 )
-
 
 func TestRowndGroups(t *testing.T) {
 	// Get test configuration
@@ -81,11 +80,11 @@ func TestRowndGroups(t *testing.T) {
 			t.Fatalf("Failed to create user: %v", err)
 		}
 		assert.NotNil(t, user)
-		
+
 		// Get the user ID from the data field
 		testUserID = user.Data["user_id"].(string)
 		t.Logf("Created test user with ID: %s", testUserID)
-		
+
 		// Verify the user ID
 		if testUserID == "" {
 			t.Fatal("User ID is empty")
@@ -95,7 +94,7 @@ func TestRowndGroups(t *testing.T) {
 	var memberID string
 	t.Run("add user to group", func(t *testing.T) {
 		t.Logf("Attempting to add user ID: %s to group ID: %s", testUserID, groupID)
-		
+
 		memberRequest := rownd.CreateGroupMemberRequest{
 			AppID:   testConfig.AppID,
 			GroupID: groupID,
@@ -103,12 +102,12 @@ func TestRowndGroups(t *testing.T) {
 			Roles:   []string{"member"},
 			State:   "active",
 		}
-		
+
 		member, err := client.GroupMembers.Create(ctx, memberRequest)
 		if err != nil {
 			t.Fatalf("Failed to create group member: %v", err)
 		}
-		
+
 		assert.NotNil(t, member)
 		assert.Equal(t, testUserID, member.UserID)
 		memberID = member.ID
@@ -118,14 +117,14 @@ func TestRowndGroups(t *testing.T) {
 	t.Run("update group member", func(t *testing.T) {
 		assert.NotEmpty(t, memberID, "Member ID should not be empty")
 		t.Logf("Updating member ID: %s", memberID)
-		
+
 		member, err := client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberRequest{
 			AppID:    testConfig.AppID,
-			 GroupID:  groupID,
-			 MemberID: memberID,
-			 UserID:   testUserID,
-			 Roles:    []string{"member", "owner", "admin"},
-			 State:    "active",
+			GroupID:  groupID,
+			MemberID: memberID,
+			UserID:   testUserID,
+			Roles:    []string{"member", "owner", "admin"},
+			State:    "active",
 		})
 		assert.NoError(t, err)
 		assert.NotNil(t, member)
@@ -163,9 +162,9 @@ func TestRowndGroups(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.NotNil(t, user)
-		
+
 		// Get the user ID from the data field
-		 secondUserID = user.Data["user_id"].(string)
+		secondUserID = user.Data["user_id"].(string)
 		assert.NotEmpty(t, secondUserID)
 		t.Logf("Created second user with ID: %s", secondUserID)
 
@@ -216,7 +215,7 @@ func TestRowndGroups(t *testing.T) {
 
 	t.Run("remove user from group", func(t *testing.T) {
 		t.Logf("Attempting to remove member ID: %s from group ID: %s", memberID, groupID)
-		
+
 		// List members before deletion
 		beforeMembers, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
 			AppID:   testConfig.AppID,
@@ -240,7 +239,7 @@ func TestRowndGroups(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		t.Logf("Members after deletion: %+v", afterMembers)
-		
+
 		// Verify member was removed
 		for _, member := range afterMembers.Results {
 			assert.NotEqual(t, memberID, member.ID, "Deleted member should not be present")

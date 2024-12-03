@@ -1,4 +1,4 @@
-module github.com/rgthelen/rownd-go-test
+module github.com/rgthelen/rownd-go-sdk
 
 go 1.21
 

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/rgthelen/rownd-go-test/pkg/rownd"
+	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 )
 
 const (

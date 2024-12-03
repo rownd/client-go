@@ -8,7 +8,7 @@ import (
     "os"
     "time"
     
-    "github.com/rgthelen/rownd-go-test/pkg/rownd"
+    "github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 )
 
 func main() {

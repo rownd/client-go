@@ -5,7 +5,7 @@ A comprehensive Go SDK for integrating Rownd authentication, user management, an
 ## Installation
 
 ```bash
-go get github.com/rgthelen/rownd-go-test
+go get github.com/rgthelen/rownd-go-sdk/pkg/rownd
 ```
 
 ## Features
@@ -25,7 +25,7 @@ package main
 import (
     "context"
     "log"
-    "github.com/rgthelen/rownd-go-test/pkg/rownd"
+    "github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 )
 
 func main() {
@@ -236,7 +236,7 @@ log.Printf("Auth Level: %s", token.Claims.AuthLevel)
 
 ### HTTP Middleware
 ```go
-import "github.com/rgthelen/rownd-go-test/pkg/rownd/middleware"
+import "github.com/rgthelen/rownd-go-sdk/pkg/rownd/middleware"
 
 // Create middleware handler
 handler, err := rowndmiddleware.NewHandler(client, 
@@ -676,7 +676,7 @@ package main
 
 import (
     "github.com/joho/godotenv"
-    "github.com/rgthelen/rownd-go-test/pkg/rownd"
+    "github.com/rgthelen/rownd-go-sdk/pkg/rownd"
     "log"
     "os"
 )

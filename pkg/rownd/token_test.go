@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rgthelen/rownd-go-test/internal/testutils"
-	"github.com/rgthelen/rownd-go-test/pkg/rownd"
+	"github.com/rgthelen/rownd-go-sdk/internal/testutils"
+	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 	"github.com/stretchr/testify/assert"
 )
 
