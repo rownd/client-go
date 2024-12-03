@@ -12,7 +12,7 @@ import (
 	"os"
 	"strings"
 	"time"
-	"path"
+
 
 	"github.com/patrickmn/go-cache"
 )
@@ -140,14 +140,9 @@ func (c *Client) rowndURL(parts ...string) (*url.URL, error) {
 		return nil, err
 	}
 
-	pathParts := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if part != "" {
-			pathParts = append(pathParts, part)
-		}
-	}
+	// Use JoinPath instead of path.Join for URL paths
+	endpoint = endpoint.JoinPath(parts...)
 
-	endpoint.Path = path.Join(endpoint.Path, path.Join(pathParts...))
 	return endpoint, nil
 }
 
