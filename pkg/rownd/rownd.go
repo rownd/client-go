@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
+	"path"
 
 	"github.com/patrickmn/go-cache"
 )
@@ -36,6 +38,8 @@ const (
 
 	defaultWKCCacheDuration  time.Duration = 1 * time.Hour
 	defaultJWKsCacheDuration time.Duration = 1 * time.Hour
+
+	defaultJWKSPath = "/hub/auth/keys"
 )
 
 // ClientConfig contains the configuration for creating a new Rownd client
@@ -125,17 +129,26 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 
 // rowndURL ...
 func (c *Client) rowndURL(parts ...string) (*url.URL, error) {
-	endpoint, err := url.JoinPath(c.baseURL, parts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compose endpoint: %w", err)
+	baseURL := c.baseURL
+	if parts[0] == defaultJWKSPath {
+		// For JWKS, use the base domain without /v1
+		baseURL = strings.TrimSuffix(baseURL, "/v1")
 	}
-
-	u, err := url.Parse(endpoint)
+	
+	endpoint, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return u, nil
+	pathParts := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part != "" {
+			pathParts = append(pathParts, part)
+		}
+	}
+
+	endpoint.Path = path.Join(endpoint.Path, path.Join(pathParts...))
+	return endpoint, nil
 }
 
 // request performs an HTTP request and unmarshals the response into v.
@@ -192,39 +205,6 @@ func (c *Client) request(ctx context.Context, method, url string, body, v interf
 	return nil
 }
 
-// WellKnownConfig represents the OAuth well-known configuration
-type WellKnownConfig struct {
-	Issuer                 string   `json:"issuer"`
-	AuthorizationEndpoint  string   `json:"authorization_endpoint"`
-	TokenEndpoint          string   `json:"token_endpoint"`
-	JwksURI                string   `json:"jwks_uri"`
-	ResponseTypesSupported []string `json:"response_types_supported"`
-	SubjectTypesSupported  []string `json:"subject_types_supported"`
-	ScopesSupported        []string `json:"scopes_supported"`
-}
-
-func (c *Client) fetchWellKnownConfig(ctx context.Context) (*WellKnownConfig, error) {
-	cached, found := c.cache.Get(cacheKeyWKC)
-	if v, ok := cached.(*WellKnownConfig); found && ok {
-		return v, nil
-	}
-
-	endpoint, err := c.rowndURL("/hub/auth/.well-known/oauth-authorization-server")
-	if err != nil {
-		return nil, err
-	}
-
-	var response *WellKnownConfig
-	if err := c.request(ctx, http.MethodGet, endpoint.String(), nil, &response); err != nil {
-		return nil, err
-	}
-
-	// set well known config in cache
-	c.cache.Set(cacheKeyWKC, response, c.wkcCacheDuration)
-
-	return response, nil
-}
-
 // JWK represents a JSON Web Key.
 type JWK struct {
 	Alg string `json:"alg"`
@@ -255,32 +235,24 @@ func (jwks JWKs) Contains(kid string) (JWK, bool) {
 	return JWK{}, false
 }
 
-// fetchJWKS ...
+// fetchJWKS fetches the JSON Web Key Set directly
 func (c *Client) fetchJWKS(ctx context.Context) (*JWKs, error) {
 	cached, found := c.cache.Get(cacheKeyJWKS)
 	if v, ok := cached.(*JWKs); found && ok {
 		return v, nil
 	}
 
-	// first fetch the well-known wkc
-	wkc, err := c.fetchWellKnownConfig(ctx)
-	if err != nil {
-		return nil, NewError(ErrAPI, "failed to fetch well-known config", err)
-	}
-
-	endpoint, err := c.rowndURL(wkc.JwksURI)
+	endpoint, err := c.rowndURL(defaultJWKSPath)
 	if err != nil {
 		return nil, err
 	}
 
 	var response *JWKs
 	if err := c.request(ctx, http.MethodGet, endpoint.String(), nil, &response); err != nil {
-		return nil, err
+		return nil, NewError(ErrAPI, "failed to fetch JWKS", err)
 	}
 
-	// cache jwk set for
 	c.cache.Set(cacheKeyJWKS, response, c.jwksCacheDuration)
-
 	return response, nil
 }
 

@@ -3,6 +3,7 @@ package rowndmiddleware
 import (
 	"net/http"
 	"strings"
+	"errors"
 
 	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
 )
@@ -91,4 +92,29 @@ func (o extractorOpt) apply(opts *handlerOptions) {
 
 func WithTokenExtractor(fn TokenExtractor) HandlerOption {
 	return extractorOpt{fn: fn}
+}
+
+func (h *Handler) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := h.TokenExtractor(r)
+		if err != nil {
+			h.ErrorHandler(w, r, err)
+			return
+		}
+
+		if token == "" {
+			h.ErrorHandler(w, r, errors.New("no token provided"))
+			return
+		}
+
+		validToken, err := h.Validator.Validate(r.Context(), token)
+		if err != nil {
+			h.ErrorHandler(w, r, err)
+			return
+		}
+
+		// Add token to context
+		ctx := rownd.AddTokenToCtx(r.Context(), validToken)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

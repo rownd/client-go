@@ -5,6 +5,8 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -20,11 +22,10 @@ const (
 
 // Token ...
 type Token struct {
-	*jwt.Token
-
-	UserID      string `json:"user_id"`
-	AccessToken string `json:"access_token"`
-	Claims      Claims `json:"decoded_token"`
+	Token       *jwt.Token `json:"-"`         // The parsed JWT token
+	UserID      string     `json:"user_id"`
+	AccessToken string     `json:"access_token"`
+	Claims      Claims     `json:"decoded_token"`
 }
 
 // Claims ...
@@ -112,15 +113,12 @@ func (c *tokenValidator) Validate(ctx context.Context, token string) (*Token, er
 		return nil, NewError(ErrAuthentication, "invalid token", nil)
 	}
 
-	// fetch JWKS
 	jwks, err := c.fetchJWKS(ctx)
 	if err != nil {
 		return nil, NewError(ErrAPI, "failed to fetch JWKS", err)
 	}
 
-	// parse and validate the token
-	parsedToken, err := jwt.ParseWithClaims(token, Claims{}, func(token *jwt.Token) (any, error) {
-		// FIXME does rownd support other signing alg?
+	parsedToken, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -130,38 +128,84 @@ func (c *tokenValidator) Validate(ctx context.Context, token string) (*Token, er
 			return nil, fmt.Errorf("kid header not found")
 		}
 
-		// find the key with matching kid
 		key, ok := jwks.Contains(kid)
 		if !ok {
 			return nil, fmt.Errorf("key %s not found", kid)
 		}
 
-		// decode the EdDSA public key from base64
-		publicKey, derr := base64.RawURLEncoding.DecodeString(key.X)
-		if derr != nil {
+		publicKey, err := base64.RawURLEncoding.DecodeString(key.X)
+		if err != nil {
 			return nil, fmt.Errorf("invalid key format for key %s: %w", key.KID, err)
 		}
 
 		return ed25519.PublicKey(publicKey), nil
 	})
+
 	if err != nil {
 		return nil, NewError(ErrAuthentication, "invalid token", err)
 	}
 
-	if !parsedToken.Valid {
-		return nil, NewError(ErrAuthentication, "invalid token", nil)
-	}
-
-	claims, ok := parsedToken.Claims.(Claims)
+	claims, ok := parsedToken.Claims.(*Claims)
 	if !ok || !parsedToken.Valid {
 		return nil, NewError(ErrAuthentication, "invalid token claims", nil)
 	}
 
-	r := Token{
-		Claims:      claims,
+	// Check expiration
+	if claims.Exp != nil {
+		if time.Now().After(claims.Exp.Time) {
+			return nil, NewError(ErrAuthentication, "token has expired", nil)
+		}
+	}
+
+	// Verify issuer
+	expectedIssuer := strings.TrimSuffix(c.baseURL, "/v1")
+	if claims.Iss != expectedIssuer {
+		return nil, NewError(ErrAuthentication, "invalid token issuer", nil)
+	}
+
+	expectedAud := fmt.Sprintf("app:%s", c.appID)
+	hasValidAud := false
+	for _, aud := range claims.Aud {
+		if aud == expectedAud {
+			hasValidAud = true
+			break
+		}
+	}
+	if !hasValidAud {
+		return nil, NewError(ErrAuthentication, "invalid token audience", nil)
+	}
+
+	r := &Token{
+		Token:       parsedToken,
+		Claims:      *claims,
 		UserID:      claims.AppUserID,
 		AccessToken: token,
 	}
 
-	return &r, nil
+	return r, nil
 }
+
+// Add this method to expose token validation on the Client
+func (c *Client) ValidateToken(ctx context.Context, token string) (*Token, error) {
+	validator := &tokenValidator{Client: c}
+	return validator.Validate(ctx, token)
+}
+
+
+// Add JWKS types
+type JWKS struct {
+	Keys []JWK `json:"keys"`
+}
+
+
+// Add method to find key by KID
+func (j *JWKS) Contains(kid string) (*JWK, bool) {
+	for _, key := range j.Keys {
+		if key.KID == kid {
+			return &key, true
+		}
+	}
+	return nil, false
+}
+
+

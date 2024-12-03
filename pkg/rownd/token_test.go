@@ -89,17 +89,39 @@ func TestRowndToken(t *testing.T) {
 
 	// Token validation tests using magic link token
 	t.Run("token validation", func(t *testing.T) {
+		// Ensure we have a valid token from the magic link test
 		if validToken == "" {
-			t.Fatal("No valid token available from magic link")
+			t.Fatal("No valid token available from magic link test")
 		}
+		t.Logf("Using token from magic link: %s", validToken)
 
 		t.Run("validate token", func(t *testing.T) {
-			tokenInfo, err := testutils.ValidateTokenForTest(ctx, client, validToken)
-			if err != nil {
-				t.Fatalf("Failed to validate token: %v", err)
+			// Validate the token we got from magic link
+			token, err := client.ValidateToken(ctx, validToken)
+			if !assert.NoError(t, err) {
+				t.Fatalf("Token validation failed: %v", err)
 			}
-			assert.NotNil(t, tokenInfo)
-			assert.NotEmpty(t, tokenInfo.UserID)
+			
+			// Verify token structure
+			assert.NotNil(t, token)
+			assert.NotEmpty(t, token.UserID)
+			assert.NotEmpty(t, token.AccessToken)
+			
+			// Verify claims
+			assert.NotNil(t, token.Claims)
+			assert.Equal(t, token.UserID, token.Claims.AppUserID)
+			assert.NotNil(t, token.Claims.Exp, "Expiration should be set")
+			assert.NotNil(t, token.Claims.Iat, "Issued at should be set")
+			assert.True(t, token.Claims.Exp.After(token.Claims.Iat.Time), "Token should expire after issuance")
+			assert.Equal(t, "https://api.rownd.io", token.Claims.Iss)
+			assert.Contains(t, token.Claims.Aud, "app:"+testConfig.AppID)
+			
+			// Verify Rownd-specific claims
+			assert.NotEmpty(t, token.Claims.AuthLevel)
+			assert.True(t, token.Claims.IsUserVerified)
+			
+			t.Logf("Validated token for user %s with auth level %s", 
+				token.UserID, token.Claims.AuthLevel)
 		})
 
 		t.Run("extract token claims", func(t *testing.T) {
