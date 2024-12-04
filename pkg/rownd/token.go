@@ -22,7 +22,7 @@ const (
 
 // Token ...
 type Token struct {
-	Token       *jwt.Token `json:"-"`         // The parsed JWT token
+	Token       *jwt.Token `json:"-"` // The parsed JWT token
 	UserID      string     `json:"user_id"`
 	AccessToken string     `json:"access_token"`
 	Claims      Claims     `json:"decoded_token"`
@@ -191,12 +191,10 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (*Token, error
 	return validator.Validate(ctx, token)
 }
 
-
 // Add JWKS types
 type JWKS struct {
 	Keys []JWK `json:"keys"`
 }
-
 
 // Add method to find key by KID
 func (j *JWKS) Contains(kid string) (*JWK, bool) {
@@ -207,5 +205,3 @@ func (j *JWKS) Contains(kid string) (*JWK, bool) {
 	}
 	return nil, false
 }
-
-
