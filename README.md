@@ -663,7 +663,7 @@ Create a `.env` file in your project root:
 ```env
 # .env
 ROWND_APP_KEY=key_bd81v4usfn4c9wh6i83c13ak
-ROWND_APP_SECRET=ras_32769e80d05702bc537079f78d4bc890214fd85c63b313c0
+ROWND_APP_SECRET=ras_32769e80.0.802bc537079f78d4bc890214fd85c63b313c0
 ROWND_APP_ID=app_xkbuml48qs3tyxxjjpaxeemv
 ROWND_BASE_URL=https://api.rownd.io
 ```
