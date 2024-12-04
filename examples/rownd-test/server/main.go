@@ -46,7 +46,6 @@ func main() {
 	client, err = rownd.NewClient(
 		rownd.WithAppKey("ROWND_APP_KEY"),
 		rownd.WithAppSecret("ROWND_APP_SECRET"),
-		rownd.WithAppID(appID),
 		rownd.WithBaseURL("https://api.rownd.io"),
 	)
 	if err != nil {

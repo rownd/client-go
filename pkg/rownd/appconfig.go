@@ -6,7 +6,9 @@ import (
 )
 
 type AppConfig struct {
-	ID string `json:"app.config.id"`
+	App struct {
+		Id string `json:"id"`
+	}
 }
 
 type appConfigClient struct {
@@ -19,7 +21,7 @@ func (c *appConfigClient) LoadAppConfig(ctx context.Context) {
 		panic(err)
 	}
 
-	c.appID = config.ID
+	c.appID = config.App.Id
 }
 
 func (c *appConfigClient) FetchAppConfig(ctx context.Context) (*AppConfig, error) {
