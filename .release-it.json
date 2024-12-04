@@ -2,7 +2,7 @@
     "npm": false,
     "git": {
       "commitMessage": "chore: release v${version}",
-      "tagName": "${version}"
+      "tagName": "v${version}"
     },
     "github": {
       "release": true
@@ -22,7 +22,7 @@
     },
     "hooks": {
       "after:release": [
-        "GOPROXY=proxy.golang.org go list -m github.com/rownd/client-go@${version}"
+        "GOPROXY=proxy.golang.org go list -m github.com/rownd/client-go@v${version}"
       ]
     }
   }
