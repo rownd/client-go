@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
+	"github.com/rownd/client-go/pkg/rownd"
 )
 
 // TODO add error handler

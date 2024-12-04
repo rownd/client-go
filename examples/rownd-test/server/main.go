@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
+	"github.com/rownd/client-go/pkg/rownd"
 )
 
 // Global variables for handlers to use
@@ -24,6 +24,7 @@ type ErrorResponse struct {
 }
 
 type contextKey string
+
 const validationContextKey contextKey = "validation"
 
 func writeError(w http.ResponseWriter, status int, message string, detail string) {
@@ -152,7 +153,7 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 
 func groupsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	// Use new Groups.List method
 	groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{
 		AppID: appID,

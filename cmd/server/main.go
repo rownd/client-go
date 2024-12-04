@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
+	"github.com/rownd/client-go/pkg/rownd"
 )
 
 func main() {

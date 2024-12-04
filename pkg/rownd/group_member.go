@@ -32,7 +32,6 @@ type GroupMember struct {
 
 // GetGroupMemberRequest ...
 type GetGroupMemberRequest struct {
-	AppID    string `json:"-"`
 	GroupID  string `json:"-"`
 	MemberID string `json:"-"`
 }
@@ -40,9 +39,6 @@ type GetGroupMemberRequest struct {
 func (r GetGroupMemberRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -63,7 +59,7 @@ func (c *groupMemberClient) Get(ctx context.Context, request GetGroupMemberReque
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "members", request.MemberID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "members", request.MemberID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +74,6 @@ func (c *groupMemberClient) Get(ctx context.Context, request GetGroupMemberReque
 
 // ListGroupMembersRequest ...
 type ListGroupMembersRequest struct {
-	// Rownd application ID
-	AppID string
 	// Group ID
 	GroupID string
 	// PageSize is the number of resources to return per query. Max is 100.
@@ -110,9 +104,6 @@ func (r ListGroupMembersRequest) params() url.Values {
 func (r ListGroupMembersRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -136,7 +127,7 @@ func (c *groupMemberClient) List(ctx context.Context, request ListGroupMembersRe
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "members")
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "members")
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +144,6 @@ func (c *groupMemberClient) List(ctx context.Context, request ListGroupMembersRe
 
 // CreateGroupMemberRequest ...
 type CreateGroupMemberRequest struct {
-	AppID   string `json:"-"`
 	GroupID string `json:"-"`
 
 	UserID string   `json:"user_id"`
@@ -164,9 +154,6 @@ type CreateGroupMemberRequest struct {
 func (r CreateGroupMemberRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -187,7 +174,7 @@ func (c *groupMemberClient) Create(ctx context.Context, request CreateGroupMembe
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "members")
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "members")
 	if err != nil {
 		c.logger.Printf("URL creation error: %v", err)
 		return nil, err
@@ -210,7 +197,6 @@ func (c *groupMemberClient) Create(ctx context.Context, request CreateGroupMembe
 
 // UpdateGroupMemberRequest ...
 type UpdateGroupMemberRequest struct {
-	AppID    string `json:"-"`
 	GroupID  string `json:"-"`
 	MemberID string `json:"-"`
 
@@ -222,9 +208,6 @@ type UpdateGroupMemberRequest struct {
 func (r UpdateGroupMemberRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -246,7 +229,7 @@ func (c *groupMemberClient) Update(ctx context.Context, request UpdateGroupMembe
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "members", request.MemberID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "members", request.MemberID)
 	if err != nil {
 		c.logger.Printf("URL creation error: %v", err)
 		return nil, err
@@ -267,7 +250,6 @@ func (c *groupMemberClient) Update(ctx context.Context, request UpdateGroupMembe
 
 // DeleteGroupMemberRequest ...
 type DeleteGroupMemberRequest struct {
-	AppID    string `json:"-"`
 	GroupID  string `json:"-"`
 	MemberID string `json:"-"`
 }
@@ -275,9 +257,6 @@ type DeleteGroupMemberRequest struct {
 func (r DeleteGroupMemberRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -298,7 +277,7 @@ func (c *groupMemberClient) Delete(ctx context.Context, req DeleteGroupMemberReq
 		return err
 	}
 
-	endpoint, err := c.rowndURL("applications", req.AppID, "groups", req.GroupID, "members", req.MemberID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", req.GroupID, "members", req.MemberID)
 	if err != nil {
 		return err
 	}

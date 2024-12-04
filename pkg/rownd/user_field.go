@@ -14,7 +14,6 @@ type userFieldClient struct {
 
 // GetUserFieldRequest ...
 type GetUserFieldRequest struct {
-	AppID  string
 	UserID string
 	Field  string
 
@@ -38,9 +37,6 @@ func (r GetUserFieldRequest) params() url.Values {
 func (r GetUserFieldRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.UserID == "" {
 		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
 	}
@@ -61,7 +57,7 @@ func (c *userFieldClient) Get(ctx context.Context, request GetUserFieldRequest) 
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", request.UserID, "data", "fields", request.Field)
+	endpoint, err := c.rowndURL("applications", c.appID, "users", request.UserID, "data", "fields", request.Field)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +79,6 @@ func (c *userFieldClient) Get(ctx context.Context, request GetUserFieldRequest) 
 
 // UpdateUserFieldRequest ...
 type UpdateUserFieldRequest struct {
-	AppID  string `json:"-"`
 	UserID string `json:"-"`
 	Field  string `json:"-"`
 	Value  any    `json:"value"`
@@ -92,9 +87,6 @@ type UpdateUserFieldRequest struct {
 func (r UpdateUserFieldRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.UserID == "" {
 		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
 	}
@@ -115,13 +107,13 @@ func (c *userFieldClient) Update(ctx context.Context, request UpdateUserFieldReq
 		return err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", request.UserID, "data", "fields", request.Field)
+	endpoint, err := c.rowndURL("applications", c.appID, "users", request.UserID, "data", "fields", request.Field)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Making field update request to: %s\n", endpoint.String())
-	
+
 	if err := c.request(ctx, http.MethodPut, endpoint.String(), request, nil, c.httpClientOpts...); err != nil {
 		fmt.Printf("Field update error: %v\n", err)
 		return err

@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-
 	"github.com/patrickmn/go-cache"
 )
 
@@ -46,7 +45,6 @@ const (
 type ClientConfig struct {
 	AppKey    string
 	AppSecret string
-	AppID     string
 	BaseURL   string
 	Timeout   time.Duration
 }
@@ -66,6 +64,7 @@ type Client struct {
 	jwksCacheDuration time.Duration
 
 	// client implementations
+	AppConfig    *appConfigClient
 	Tokens       *tokenValidator
 	Users        *userClient
 	UserFields   *userFieldClient
@@ -82,7 +81,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	o := clientOptions{
 		appKey:            os.Getenv("ROWND_APP_KEY"),
 		appSecret:         os.Getenv("ROWND_APP_SECRET"),
-		appID:             os.Getenv("ROWND_APP_ID"),
 		baseURL:           defaultBaseURL,
 		httpClient:        &http.Client{Timeout: defaultHTTPTimeout},
 		wkcCacheDuration:  defaultWKCCacheDuration,
@@ -99,7 +97,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	c := &Client{
 		appKey:     o.appKey,
 		appSecret:  o.appSecret,
-		appID:      o.appID,
 		baseURL:    o.baseURL,
 		httpClient: o.httpClient,
 		httpClientOpts: []RequestOption{
@@ -123,6 +120,9 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		logger: c.logger,
 	}
 	c.MagicLinks = &magicLinkClient{c}
+	c.AppConfig = &appConfigClient{c}
+
+	c.AppConfig.LoadAppConfig(context.Background())
 
 	return c, nil
 }
@@ -134,7 +134,7 @@ func (c *Client) rowndURL(parts ...string) (*url.URL, error) {
 		// For JWKS, use the base domain without /v1
 		baseURL = strings.TrimSuffix(baseURL, "/v1")
 	}
-	
+
 	endpoint, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
@@ -275,4 +275,6 @@ func (c *Client) GetAppKey() string {
 	return c.appKey
 }
 
-
+func (c *Client) GetAppId() string {
+	return c.appID
+}

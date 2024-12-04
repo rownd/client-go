@@ -56,8 +56,6 @@ type userClient struct {
 
 // GetUserRequest ...
 type GetUserRequest struct {
-	// AppID is the Rownd application ID
-	AppID string `json:"-"`
 	// UserID is the user id.
 	UserID string `json:"-"`
 	// Fields is a comma-separated list of fields to include in the profile data.
@@ -77,9 +75,6 @@ func (r *GetUserRequest) params() url.Values {
 func (r *GetUserRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.UserID == "" {
 		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
 	}
@@ -97,7 +92,7 @@ func (c *userClient) Get(ctx context.Context, request GetUserRequest) (*User, er
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", request.UserID, "data")
+	endpoint, err := c.rowndURL("applications", c.appID, "users", request.UserID, "data")
 	if err != nil {
 		return nil, err
 	}
@@ -117,9 +112,6 @@ func (c *userClient) Get(ctx context.Context, request GetUserRequest) (*User, er
 
 // ListUsersRequest ...
 type ListUsersRequest struct {
-	// AppID is the Rownd application ID.
-	AppID string `json:"app_id"`
-
 	// Fields is a comma-separated list of fields to include in the profile data
 	Fields []string `json:"fields"`
 
@@ -173,10 +165,6 @@ func (r *ListUsersRequest) params() url.Values {
 func (r *ListUsersRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
-
 	if len(errs) == 0 {
 		return nil
 	}
@@ -198,7 +186,7 @@ func (c *userClient) List(ctx context.Context, request ListUsersRequest) (*ListU
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", "data")
+	endpoint, err := c.rowndURL("applications", c.appID, "users", "data")
 	if err != nil {
 		return nil, err
 	}
@@ -222,9 +210,6 @@ func (c *userClient) List(ctx context.Context, request ListUsersRequest) (*ListU
 
 // CreateOrUpdateUserRequest represents the request body for updating a user
 type CreateOrUpdateUserRequest struct {
-	// Rownd application id.
-	AppID string `json:"-"`
-
 	// Rownd User id.
 	UserID string `json:"-"`
 
@@ -253,9 +238,6 @@ func (r *CreateOrUpdateUserRequest) params() url.Values {
 func (r *CreateOrUpdateUserRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.Data == nil {
 		errs = append(errs, NewError(ErrValidation, "data is required", nil))
 	}
@@ -273,7 +255,7 @@ func (c *userClient) CreateOrUpdate(ctx context.Context, request CreateOrUpdateU
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", request.UserID, "data")
+	endpoint, err := c.rowndURL("applications", c.appID, "users", request.UserID, "data")
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +281,6 @@ func (c *userClient) CreateOrUpdate(ctx context.Context, request CreateOrUpdateU
 
 // PatchUserRequest ...
 type PatchUserRequest struct {
-	AppID  string `json:"-"`
 	UserID string `json:"-"`
 
 	// WriteDataToIntegrations is a query parameter that dictates if Rownd should write the
@@ -323,9 +304,6 @@ func (r *PatchUserRequest) params() url.Values {
 func (r *PatchUserRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.UserID == "" {
 		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
 	}
@@ -343,7 +321,7 @@ func (c *userClient) Patch(ctx context.Context, request PatchUserRequest) (*User
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", request.UserID, "data")
+	endpoint, err := c.rowndURL("applications", c.appID, "users", request.UserID, "data")
 	if err != nil {
 		return nil, err
 	}
@@ -362,16 +340,12 @@ func (c *userClient) Patch(ctx context.Context, request PatchUserRequest) (*User
 
 // DeleteUserRequest ...
 type DeleteUserRequest struct {
-	AppID  string `json:"-"`
 	UserID string `json:"-"`
 }
 
 func (r *DeleteUserRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.UserID == "" {
 		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
 	}
@@ -389,7 +363,7 @@ func (c *userClient) Delete(ctx context.Context, request DeleteUserRequest) erro
 		return err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "users", request.UserID, "data")
+	endpoint, err := c.rowndURL("applications", c.appID, "users", request.UserID, "data")
 	if err != nil {
 		return err
 	}

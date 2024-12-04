@@ -59,7 +59,6 @@ type groupClient struct {
 
 // GetGroupRequest ...
 type GetGroupRequest struct {
-	AppID   string `json:"-"`
 	GroupID string `json:"-"`
 }
 
@@ -67,9 +66,6 @@ type GetGroupRequest struct {
 func (r GetGroupRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -87,7 +83,7 @@ func (c *groupClient) Get(ctx context.Context, request GetGroupRequest) (*Group,
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL(c.baseURL, "applications", request.AppID, "groups", request.GroupID)
+	endpoint, err := c.rowndURL(c.baseURL, "applications", c.appID, "groups", request.GroupID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose endpoint: %w", err)
 	}
@@ -102,9 +98,6 @@ func (c *groupClient) Get(ctx context.Context, request GetGroupRequest) (*Group,
 
 // ListGroupsRequest ...
 type ListGroupsRequest struct {
-	// AppID is the Rownd application id.
-	AppID string `json:"-"`
-
 	// PageSize is the number of resources to return per query. Max is 100.
 	PageSize *int
 
@@ -135,10 +128,6 @@ func (r ListGroupsRequest) params() url.Values {
 func (r ListGroupsRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
-
 	if len(errs) == 0 {
 		return nil
 	}
@@ -158,7 +147,7 @@ func (c *groupClient) List(ctx context.Context, request ListGroupsRequest) (*Lis
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups")
+	endpoint, err := c.rowndURL("applications", c.appID, "groups")
 	if err != nil {
 		return nil, err
 	}
@@ -175,9 +164,6 @@ func (c *groupClient) List(ctx context.Context, request ListGroupsRequest) (*Lis
 
 // CreateGroupRequest ...
 type CreateGroupRequest struct {
-	// AppID is the Rownd application ID.
-	AppID string `json:"-"`
-
 	// The group name.
 	Name string `json:"name"`
 
@@ -191,9 +177,6 @@ type CreateGroupRequest struct {
 func (r CreateGroupRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if !r.AdmissionPolicy.validate() {
 		errs = append(errs, NewError(ErrValidation, "invalid admission policy", nil))
 	}
@@ -211,7 +194,7 @@ func (c *groupClient) Create(ctx context.Context, request CreateGroupRequest) (*
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups")
+	endpoint, err := c.rowndURL("applications", c.appID, "groups")
 	if err != nil {
 		return nil, err
 	}
@@ -226,16 +209,12 @@ func (c *groupClient) Create(ctx context.Context, request CreateGroupRequest) (*
 
 // DeleteGroupRequest ...
 type DeleteGroupRequest struct {
-	AppID   string
 	GroupID string
 }
 
 func (r *DeleteGroupRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -252,7 +231,7 @@ func (c *groupClient) Delete(ctx context.Context, req DeleteGroupRequest) error 
 	if err := req.validate(); err != nil {
 		return err
 	}
-	endpoint, err := c.rowndURL("applications", req.AppID, "groups", req.GroupID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", req.GroupID)
 	if err != nil {
 		return err
 	}

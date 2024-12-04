@@ -31,7 +31,6 @@ type groupInviteClient struct {
 
 // GetGroupInviteRequest ...
 type GetGroupInviteRequest struct {
-	AppID    string
 	GroupID  string
 	InviteID string
 }
@@ -39,9 +38,6 @@ type GetGroupInviteRequest struct {
 func (r GetGroupInviteRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -62,7 +58,7 @@ func (c *groupInviteClient) Get(ctx context.Context, request GetGroupInviteReque
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "invites", request.InviteID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "invites", request.InviteID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +73,6 @@ func (c *groupInviteClient) Get(ctx context.Context, request GetGroupInviteReque
 
 // ListGroupInvitesRequest ...
 type ListGroupInvitesRequest struct {
-	AppID   string
 	GroupID string
 
 	// EnsuredUserID is the User ID for which the invite was created. This is not the member ID.
@@ -97,9 +92,6 @@ func (r ListGroupInvitesRequest) params() url.Values {
 func (r ListGroupInvitesRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -123,7 +115,7 @@ func (c *groupInviteClient) List(ctx context.Context, request ListGroupInvitesRe
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "invites")
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "invites")
 	if err != nil {
 		return nil, err
 	}
@@ -139,9 +131,6 @@ func (c *groupInviteClient) List(ctx context.Context, request ListGroupInvitesRe
 }
 
 type CreateGroupInviteRequest struct {
-	// AppID is the Rownd application ID
-	AppID string `json:"-"`
-
 	// GroupID is Group ID.
 	GroupID string `json:"-"`
 
@@ -174,9 +163,6 @@ type CreateGroupInviteRequest struct {
 func (r CreateGroupInviteRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -207,7 +193,7 @@ func (c *groupInviteClient) Create(ctx context.Context, request CreateGroupInvit
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "invites")
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "invites")
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +208,6 @@ func (c *groupInviteClient) Create(ctx context.Context, request CreateGroupInvit
 
 // UpdateGroupInviteRequest ...
 type UpdateGroupInviteRequest struct {
-	AppID    string `json:"-"`
 	GroupID  string `json:"-"`
 	InviteID string `json:"-"`
 
@@ -237,9 +222,6 @@ type UpdateGroupInviteRequest struct {
 func (r *UpdateGroupInviteRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -260,7 +242,7 @@ func (c *groupInviteClient) Update(ctx context.Context, request UpdateGroupInvit
 		return nil, err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "invites", request.InviteID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "invites", request.InviteID)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +257,6 @@ func (c *groupInviteClient) Update(ctx context.Context, request UpdateGroupInvit
 
 // DeleteGroupInviteRequest ...
 type DeleteGroupInviteRequest struct {
-	AppID    string `json:"-"`
 	GroupID  string `json:"-"`
 	InviteID string `json:"-"`
 }
@@ -283,9 +264,6 @@ type DeleteGroupInviteRequest struct {
 func (r DeleteGroupInviteRequest) validate() error {
 	var errs []error
 
-	if r.AppID == "" {
-		errs = append(errs, NewError(ErrValidation, "app id is required", nil))
-	}
 	if r.GroupID == "" {
 		errs = append(errs, NewError(ErrValidation, "group id is required", nil))
 	}
@@ -306,7 +284,7 @@ func (c *groupInviteClient) Delete(ctx context.Context, request DeleteGroupInvit
 		return err
 	}
 
-	endpoint, err := c.rowndURL("applications", request.AppID, "groups", request.GroupID, "invites", request.InviteID)
+	endpoint, err := c.rowndURL("applications", c.appID, "groups", request.GroupID, "invites", request.InviteID)
 	if err != nil {
 		return err
 	}

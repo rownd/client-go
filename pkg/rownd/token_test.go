@@ -1,5 +1,4 @@
-		// Tests token validation and magic links
-
+// Tests token validation and magic links
 
 package rownd_test
 
@@ -8,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rgthelen/rownd-go-sdk/internal/testutils"
-	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
+	"github.com/rownd/client-go/internal/testutils"
+	"github.com/rownd/client-go/pkg/rownd"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +20,6 @@ func TestRowndToken(t *testing.T) {
 	client, err := rownd.NewClient(
 		rownd.WithAppKey(testConfig.AppKey),
 		rownd.WithAppSecret(testConfig.AppSecret),
-		rownd.WithAppID(testConfig.AppID),
 		rownd.WithBaseURL(testConfig.BaseURL),
 	)
 	if err != nil {
@@ -78,7 +76,6 @@ func TestRowndToken(t *testing.T) {
 		t.Cleanup(func() {
 			if magicLinkUserID != "" {
 				err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
-					AppID:  testConfig.AppID,
 					UserID: magicLinkUserID,
 				})
 				if err != nil {
@@ -104,26 +101,26 @@ func TestRowndToken(t *testing.T) {
 			if !assert.NoError(t, err) {
 				t.Fatalf("Token validation failed: %v", err)
 			}
-			
+
 			// Verify token structure
 			assert.NotNil(t, token)
 			assert.NotEmpty(t, token.UserID)
 			assert.NotEmpty(t, token.AccessToken)
-			
+
 			// Verify claims
 			assert.NotNil(t, token.Claims)
 			assert.Equal(t, token.UserID, token.Claims.AppUserID)
 			assert.NotNil(t, token.Claims.Exp, "Expiration should be set")
 			assert.NotNil(t, token.Claims.Iat, "Issued at should be set")
 			assert.True(t, token.Claims.Exp.After(token.Claims.Iat.Time), "Token should expire after issuance")
-			assert.Equal(t, "https://api.rownd.io", token.Claims.Iss)
-			assert.Contains(t, token.Claims.Aud, "app:"+testConfig.AppID)
-			
+			assert.Equal(t, testConfig.BaseURL, token.Claims.Iss)
+			assert.Contains(t, token.Claims.Aud, "app:"+client.GetAppId())
+
 			// Verify Rownd-specific claims
 			assert.NotEmpty(t, token.Claims.AuthLevel)
 			assert.True(t, token.Claims.IsUserVerified)
-			
-			t.Logf("Validated token for user %s with auth level %s", 
+
+			t.Logf("Validated token for user %s with auth level %s",
 				token.UserID, token.Claims.AuthLevel)
 		})
 

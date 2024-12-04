@@ -17,7 +17,6 @@ type ClientOption interface {
 type clientOptions struct {
 	appKey            string
 	appSecret         string
-	appID             string
 	baseURL           string
 	httpClient        *http.Client
 	jwksCacheDuration time.Duration
@@ -76,17 +75,6 @@ func (o appSecretOpt) apply(opts *clientOptions) {
 // WithAppSecret ...
 func WithAppSecret(secret string) ClientOption {
 	return appSecretOpt(secret)
-}
-
-type appIDOpt string
-
-func (o appIDOpt) apply(opts *clientOptions) {
-	opts.appID = string(o)
-}
-
-// WithAppID ...
-func WithAppID(appID string) ClientOption {
-	return appIDOpt(appID)
 }
 
 type baseURLOpt string

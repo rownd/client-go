@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rgthelen/rownd-go-sdk/internal/testutils"
-	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
+	"github.com/rownd/client-go/internal/testutils"
+	"github.com/rownd/client-go/pkg/rownd"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +20,6 @@ func TestRowndUserOperations(t *testing.T) {
 	client, err := rownd.NewClient(
 		rownd.WithAppKey(testConfig.AppKey),
 		rownd.WithAppSecret(testConfig.AppSecret),
-		rownd.WithAppID(testConfig.AppID),
 		rownd.WithBaseURL(testConfig.BaseURL),
 	)
 	if err != nil {
@@ -37,7 +36,6 @@ func TestRowndUserOperations(t *testing.T) {
 		}
 
 		req := rownd.CreateOrUpdateUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: "__UUID__",
 			Data:   userData,
 		}
@@ -67,7 +65,6 @@ func TestRowndUserOperations(t *testing.T) {
 		}
 
 		user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: createdUser.ID,
 			Data:   updatedData,
 		})
@@ -83,7 +80,6 @@ func TestRowndUserOperations(t *testing.T) {
 
 		t.Logf("Updating user with ID: %s", createdUser.ID)
 		err := client.UserFields.Update(ctx, rownd.UpdateUserFieldRequest{
-			AppID:  testConfig.AppID,
 			UserID: createdUser.ID,
 			Field:  "first_name",
 			Value:  "SingleField",
@@ -97,7 +93,6 @@ func TestRowndUserOperations(t *testing.T) {
 		}
 
 		user, err := client.Users.Get(ctx, rownd.GetUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: createdUser.ID,
 		})
 		assert.NoError(t, err)
@@ -112,7 +107,6 @@ func TestRowndUserOperations(t *testing.T) {
 
 		t.Logf("Attempting to delete user ID: %s", createdUser.ID)
 		err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: createdUser.ID,
 		})
 		assert.NoError(t, err)
@@ -130,7 +124,6 @@ func TestRowndUserOperations(t *testing.T) {
 		}
 
 		user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: "__UUID__",
 			Data:   userData,
 		})
@@ -144,7 +137,6 @@ func TestRowndUserOperations(t *testing.T) {
 
 		// Lookup the user by email with all fields
 		users, err := client.Users.List(ctx, rownd.ListUsersRequest{
-			AppID:        testConfig.AppID,
 			Fields:       []string{"email", "first_name", "last_name", "user_id"}, // Request all needed fields
 			LookupFilter: []string{randomEmail},
 		})
@@ -175,7 +167,6 @@ func TestRowndUserOperations(t *testing.T) {
 
 		// Cleanup
 		err = client.Users.Delete(ctx, rownd.DeleteUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: createdUserID,
 		})
 		assert.NoError(t, err)

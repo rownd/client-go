@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rgthelen/rownd-go-sdk/internal/testutils"
-	"github.com/rgthelen/rownd-go-sdk/pkg/rownd"
+	"github.com/rownd/client-go/internal/testutils"
+	"github.com/rownd/client-go/pkg/rownd"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,6 @@ func TestRowndGroups(t *testing.T) {
 	client, err := rownd.NewClient(
 		rownd.WithAppKey(testConfig.AppKey),
 		rownd.WithAppSecret(testConfig.AppSecret),
-		rownd.WithAppID(testConfig.AppID),
 		rownd.WithBaseURL(testConfig.BaseURL),
 	)
 	if err != nil {
@@ -31,10 +30,10 @@ func TestRowndGroups(t *testing.T) {
 
 	t.Run("create group", func(t *testing.T) {
 		group, err := client.Groups.Create(ctx, rownd.CreateGroupRequest{
-			AppID:           testConfig.AppID,
 			Name:            groupName,
 			AdmissionPolicy: "invite_only",
 		})
+		println(err)
 		assert.NoError(t, err)
 		assert.NotNil(t, group)
 		assert.Equal(t, groupName, group.Name)
@@ -43,9 +42,7 @@ func TestRowndGroups(t *testing.T) {
 	})
 
 	t.Run("list groups", func(t *testing.T) {
-		groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{
-			AppID: testConfig.AppID,
-		})
+		groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{})
 		assert.NoError(t, err)
 		assert.NotNil(t, groups)
 		assert.Greater(t, groups.TotalResults, 0)
@@ -72,7 +69,6 @@ func TestRowndGroups(t *testing.T) {
 		}
 
 		user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: "__UUID__",
 			Data:   userData,
 		})
@@ -96,7 +92,6 @@ func TestRowndGroups(t *testing.T) {
 		t.Logf("Attempting to add user ID: %s to group ID: %s", testUserID, groupID)
 
 		memberRequest := rownd.CreateGroupMemberRequest{
-			AppID:   testConfig.AppID,
 			GroupID: groupID,
 			UserID:  testUserID,
 			Roles:   []string{"member"},
@@ -119,7 +114,6 @@ func TestRowndGroups(t *testing.T) {
 		t.Logf("Updating member ID: %s", memberID)
 
 		member, err := client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberRequest{
-			AppID:    testConfig.AppID,
 			GroupID:  groupID,
 			MemberID: memberID,
 			UserID:   testUserID,
@@ -133,7 +127,6 @@ func TestRowndGroups(t *testing.T) {
 
 	t.Run("create group invite", func(t *testing.T) {
 		invite, err := client.GroupInvites.Create(ctx, rownd.CreateGroupInviteRequest{
-			AppID:       testConfig.AppID,
 			GroupID:     groupID,
 			Email:       "invite@example.com",
 			Roles:       []string{"member"},
@@ -156,7 +149,6 @@ func TestRowndGroups(t *testing.T) {
 		}
 
 		user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: "__UUID__",
 			Data:   userData,
 		})
@@ -170,7 +162,6 @@ func TestRowndGroups(t *testing.T) {
 
 		// Add them to the group as owner
 		member, err := client.GroupMembers.Create(ctx, rownd.CreateGroupMemberRequest{
-			AppID:   testConfig.AppID,
 			GroupID: groupID,
 			UserID:  secondUserID,
 			Roles:   []string{"member", "owner"},
@@ -184,7 +175,6 @@ func TestRowndGroups(t *testing.T) {
 
 	t.Run("list group members", func(t *testing.T) {
 		members, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
-			AppID:   testConfig.AppID,
 			GroupID: groupID,
 		})
 		assert.NoError(t, err)
@@ -218,7 +208,6 @@ func TestRowndGroups(t *testing.T) {
 
 		// List members before deletion
 		beforeMembers, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
-			AppID:   testConfig.AppID,
 			GroupID: groupID,
 		})
 		assert.NoError(t, err)
@@ -226,7 +215,6 @@ func TestRowndGroups(t *testing.T) {
 
 		// Attempt deletion
 		err = client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
-			AppID:    testConfig.AppID,
 			GroupID:  groupID,
 			MemberID: memberID,
 		})
@@ -234,7 +222,6 @@ func TestRowndGroups(t *testing.T) {
 
 		// List members after deletion to verify
 		afterMembers, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
-			AppID:   testConfig.AppID,
 			GroupID: groupID,
 		})
 		assert.NoError(t, err)
@@ -248,7 +235,6 @@ func TestRowndGroups(t *testing.T) {
 
 	t.Run("delete group", func(t *testing.T) {
 		err := client.Groups.Delete(ctx, rownd.DeleteGroupRequest{
-			AppID:   testConfig.AppID,
 			GroupID: groupID,
 		})
 		assert.NoError(t, err)
@@ -256,7 +242,6 @@ func TestRowndGroups(t *testing.T) {
 
 	t.Run("delete test user", func(t *testing.T) {
 		err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: testUserID,
 		})
 		assert.NoError(t, err)
@@ -267,7 +252,6 @@ func TestRowndGroups(t *testing.T) {
 			t.Fatal("Second user ID not found")
 		}
 		err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
-			AppID:  testConfig.AppID,
 			UserID: secondUserID,
 		})
 		assert.NoError(t, err)
