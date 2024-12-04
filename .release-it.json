@@ -1,0 +1,28 @@
+{
+    "npm": false,
+    "git": {
+      "commitMessage": "chore: release v${version}",
+      "tagName": "${version}"
+    },
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "preset": "angular",
+        "infile": "CHANGELOG.md"
+      },
+      "@release-it/bumper": {
+        "in": "VERSION",
+        "out": [
+          "README.md",
+          "VERSION"
+        ]
+      }
+    },
+    "hooks": {
+      "after:release": [
+        "GOPROXY=proxy.golang.org go list -m github.com/rownd/client-go@v${version}"
+      ]
+    }
+  }
