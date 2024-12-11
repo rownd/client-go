@@ -33,7 +33,6 @@ func main() {
     client, err := rownd.NewClient(
         rownd.WithAppKey("YOUR_APP_KEY"),
         rownd.WithAppSecret("YOUR_APP_SECRET"),
-        rownd.WithAppID("YOUR_APP_ID"),
         rownd.WithBaseURL("https://api.rownd.io"),
     )
     if err != nil {
@@ -44,7 +43,6 @@ func main() {
 
     // Create or update a user
     user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-        AppID: "YOUR_APP_ID",
         Data: map[string]interface{}{
             "email": "user@example.com",
             "first_name": "John",
@@ -65,8 +63,7 @@ func main() {
 ```go
 // Let Rownd generate a UUID
 user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-    AppID:  "YOUR_APP_ID",
-    UserID: "__UUID__",  // Special value that tells Rownd to generate a UUID
+    UserID: "__default__",  // Special value that tells Rownd to generate a user ID. Can be `__rowndid__`, `__uuid__`, `__objectid__`, or `__default__` for your app's configured default behavior.
     Data: map[string]interface{}{
         "email": "user@example.com",
         "first_name": "John",
@@ -88,7 +85,6 @@ user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
 
 // Use your own ID
 user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
-    AppID:  "YOUR_APP_ID",
     UserID: "custom_id_12345",
     Data: map[string]interface{}{
         "email": "user@example.com",
@@ -101,7 +97,6 @@ user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
 ```go
 // Lookup by email
 users, err := client.Users.List(ctx, rownd.ListUsersRequest{
-    AppID: "YOUR_APP_ID",
     Fields: []string{"email", "first_name", "last_name", "user_id"},  // Specify fields to return
     LookupFilter: []string{"user@example.com"},
 })
@@ -125,7 +120,6 @@ users, err := client.Users.List(ctx, rownd.ListUsersRequest{
 
 // Pagination example
 users, err := client.Users.List(ctx, rownd.ListUsersRequest{
-    AppID: "YOUR_APP_ID",
     PageSize: ToPtr(10),  // Get 10 results per page
     After: ToPtr("user_lastid"),  // Start after this user ID
 })
@@ -136,7 +130,6 @@ users, err := client.Users.List(ctx, rownd.ListUsersRequest{
 ```go
 // Create a group
 group, err := client.Groups.Create(ctx, rownd.CreateGroupRequest{
-    AppID: "YOUR_APP_ID",
     Name: "Engineering Team",
     AdmissionPolicy: rownd.AdmissionPolicyInviteOnly,
     Meta: map[string]any{
@@ -159,7 +152,6 @@ group, err := client.Groups.Create(ctx, rownd.CreateGroupRequest{
 
 // Create an invite
 invite, err := client.GroupInvites.Create(ctx, rownd.CreateGroupInviteRequest{
-    AppID: "YOUR_APP_ID",
     GroupID: group.ID,
     Email: "new@example.com",
     Roles: []string{"member"},
@@ -255,20 +247,17 @@ router.Use(rowndmiddleware.WithAuthentication(handler))
 ```go
 // Get user
 user, err := client.Users.Get(ctx, rownd.GetUserRequest{
-    AppID: "app_id",
     UserID: "user_id",
 })
 
 // List/lookup users
 users, err := client.Users.List(ctx, rownd.ListUsersRequest{
-    AppID: "app_id",
     Fields: []string{"email", "first_name", "last_name"},
     LookupFilter: []string{"user@example.com"},
 })
 
 // Delete user
 err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
-    AppID: "app_id",
     UserID: "user_id",
 })
 ```
@@ -279,7 +268,6 @@ err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
 ```go
 // Create group
 group, err := client.Groups.Create(ctx, rownd.CreateGroupRequest{
-    AppID: "app_id",
     Name: "Engineering Team",
     AdmissionPolicy: rownd.AdmissionPolicyInviteOnly,
     Meta: map[string]any{
@@ -288,13 +276,10 @@ group, err := client.Groups.Create(ctx, rownd.CreateGroupRequest{
 })
 
 // List groups
-groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{
-    AppID: "app_id",
-})
+groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{})
 
 // Delete group
 err := client.Groups.Delete(ctx, rownd.DeleteGroupRequest{
-    AppID: "app_id",
     GroupID: "group_id",
 })
 ```
@@ -303,7 +288,6 @@ err := client.Groups.Delete(ctx, rownd.DeleteGroupRequest{
 ```go
 // Create invite
 invite, err := client.GroupInvites.Create(ctx, rownd.CreateGroupInviteRequest{
-    AppID: "app_id",
     GroupID: "group_id",
     Email: "new@example.com",
     Roles: []string{"member"},
@@ -312,13 +296,11 @@ invite, err := client.GroupInvites.Create(ctx, rownd.CreateGroupInviteRequest{
 
 // List invites
 invites, err := client.GroupInvites.List(ctx, rownd.ListGroupInvitesRequest{
-    AppID: "app_id",
     GroupID: "group_id",
 })
 
 // Delete invite
 err := client.GroupInvites.Delete(ctx, rownd.DeleteGroupInviteRequest{
-    AppID: "app_id",
     GroupID: "group_id",
     InviteID: "invite_id",
 })
@@ -351,7 +333,6 @@ type GroupMember struct {
 ```go
 // Add a user to a group
 member, err := client.GroupMembers.Create(ctx, rownd.CreateGroupMemberRequest{
-    AppID: "YOUR_APP_ID",
     GroupID: "group_a3l1n2lsnb3q0xbul9enjnh7",
     UserID: "user_a7b53gwdaml5jt7t71442nt7",
     Roles: []string{"editor", "viewer"},
@@ -371,7 +352,6 @@ member, err := client.GroupMembers.Create(ctx, rownd.CreateGroupMemberRequest{
 
 // Update a member's roles using member_id
 updatedMember, err := client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberRequest{
-    AppID: "YOUR_APP_ID",
     GroupID: "group_a3l1n2lsnb3q0xbul9enjnh7",
     MemberID: "member_dnn5g4e3q6aptail2gr43kpj",  // Use member_id, not user_id
     Roles: []string{"admin"},
@@ -379,7 +359,6 @@ updatedMember, err := client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberReq
 
 // List group members
 members, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
-    AppID: "YOUR_APP_ID",
     GroupID: "group_a3l1n2lsnb3q0xbul9enjnh7",
 })
 // Response:
@@ -406,7 +385,6 @@ members, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
 
 // Remove a member from a group using member_id
 err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
-    AppID: "YOUR_APP_ID",
     GroupID: "group_a3l1n2lsnb3q0xbul9enjnh7",
     MemberID: "member_dnn5g4e3q6aptail2gr43kpj",  // Use member_id, not user_id
 })
@@ -426,7 +404,6 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
    ```go
    // Transfer ownership before removing the last owner
    _, err = client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
        MemberID: "new_owner_member_id",
        Roles: []string{"owner", "member"},
@@ -455,7 +432,6 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
    ```go
    // First member automatically becomes owner
    member, err := client.GroupMembers.Create(ctx, rownd.CreateGroupMemberRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
        UserID: "user_id",
        Roles: []string{"member"},  // "owner" will be automatically added
@@ -475,7 +451,6 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
    ```go
    // This will fail if it's the last owner
    err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
        MemberID: "last_owner_member_id",  // Will return error if last owner
    })
@@ -487,13 +462,11 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
    ```go
    // Correct order: Delete group first, which removes all members
    err := client.Groups.Delete(ctx, rownd.DeleteGroupRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
    })
 
    // Incorrect: Will fail if trying to remove last member while group exists
    err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
        MemberID: "last_member_id",  // Will return error
    })
@@ -505,7 +478,6 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
    ```go
    // First, add owner role to another member
    _, err = client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
        MemberID: "new_owner_member_id",
        Roles: []string{"owner", "member"},
@@ -516,7 +488,6 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
 
    // Then, you can safely remove owner role from the previous owner
    _, err = client.GroupMembers.Update(ctx, rownd.UpdateGroupMemberRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
        MemberID: "old_owner_member_id",
        Roles: []string{"member"},
@@ -526,7 +497,6 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
 2. **Checking Owner Status**
    ```go
    members, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
-       AppID: "YOUR_APP_ID",
        GroupID: "group_id",
    })
    
@@ -550,10 +520,9 @@ err := client.GroupMembers.Delete(ctx, rownd.DeleteGroupMemberRequest{
 3. **Group Cleanup Process**
    ```go
    // Proper group cleanup sequence
-   func cleanupGroup(ctx context.Context, client *rownd.Client, appID, groupID string) error {
+   func cleanupGroup(ctx context.Context, client *rownd.Client, groupID string) error {
        // 1. First, delete the group (this will remove all members)
        err := client.Groups.Delete(ctx, rownd.DeleteGroupRequest{
-           AppID: appID,
            GroupID: groupID,
        })
        if err != nil {
@@ -690,7 +659,6 @@ func main() {
     client, err := rownd.NewClient(
         rownd.WithAppKey(os.Getenv("ROWND_APP_KEY")),
         rownd.WithAppSecret(os.Getenv("ROWND_APP_SECRET")),
-        rownd.WithAppID(os.Getenv("ROWND_APP_ID")),
         rownd.WithBaseURL(os.Getenv("ROWND_BASE_URL")),
     )
     if err != nil {
