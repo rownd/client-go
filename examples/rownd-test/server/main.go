@@ -38,14 +38,11 @@ func writeError(w http.ResponseWriter, status int, message string, detail string
 }
 
 func main() {
-	// Set global app ID
-	appID = "ROWND_APP_ID"
-
 	// Initialize client with options instead of config struct
 	var err error
 	client, err = rownd.NewClient(
-		rownd.WithAppKey("ROWND_APP_KEY"),
-		rownd.WithAppSecret("ROWND_APP_SECRET"),
+		rownd.WithAppKey(os.Getenv("ROWND_APP_KEY")),
+		rownd.WithAppSecret(os.Getenv("ROWND_APP_SECRET")),
 		rownd.WithBaseURL("https://api.rownd.io"),
 	)
 	if err != nil {
@@ -53,8 +50,43 @@ func main() {
 	}
 
 	// Serve static files
+	replaceFunc := func(content string) string {
+		return strings.ReplaceAll(content, "ROWND_APP_KEY", os.Getenv("ROWND_APP_KEY"))
+	}
+
+	// File server for serving static files
 	fs := http.FileServer(http.Dir("client/static"))
-	http.Handle("/", fs)
+
+	// Custom handler
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Get the file path
+		filePath := "client/static" + r.URL.Path
+		if r.URL.Path == "" || r.URL.Path == "/" {
+			filePath += "index.html"
+		}
+
+		// Check if the requested file exists
+		if _, err := os.Stat(filePath); err == nil {
+			// Read the file content
+			data, err := os.ReadFile(filePath)
+			if err != nil {
+				log.Fatal(err)
+				http.Error(w, "Error reading file", http.StatusInternalServerError)
+				return
+			}
+
+			// Apply the string replacement logic
+			modifiedContent := replaceFunc(string(data))
+
+			// Write the modified content to the response
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/html") // Adjust the content type as needed
+			w.Write([]byte(modifiedContent))
+		} else {
+			// Serve a 404 page or delegate to the file server
+			fs.ServeHTTP(w, r)
+		}
+	})
 
 	// Add CORS headers middleware
 	corsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
@@ -137,7 +169,6 @@ func userHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use new Users.Get method
 	user, err := client.Users.Get(ctx, rownd.GetUserRequest{
-		AppID:  appID,
 		UserID: validation.UserID,
 	})
 	if err != nil {
@@ -154,9 +185,7 @@ func groupsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Use new Groups.List method
-	groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{
-		AppID: appID,
-	})
+	groups, err := client.Groups.List(ctx, rownd.ListGroupsRequest{})
 	if err != nil {
 		log.Printf("Error listing groups: %v", err)
 		http.Error(w, "Failed to list groups", http.StatusInternalServerError)
@@ -177,7 +206,6 @@ func groupsHandler(w http.ResponseWriter, r *http.Request) {
 	groupsWithMembers := []GroupWithMembers{}
 	for _, group := range groups.Results {
 		members, err := client.GroupMembers.List(ctx, rownd.ListGroupMembersRequest{
-			AppID:   appID,
 			GroupID: group.ID,
 		})
 		if err != nil {
@@ -211,9 +239,6 @@ func createGroupHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	// Add required AppID
-	req.AppID = appID
 
 	// Use new Groups.Create method
 	group, err := client.Groups.Create(r.Context(), req)
@@ -264,7 +289,6 @@ func createGroupInviteHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	invite, err := client.GroupInvites.Create(ctx, rownd.CreateGroupInviteRequest{
-		AppID:       appID,
 		GroupID:     groupID,
 		UserID:      req.UserID,
 		Roles:       req.Roles,
@@ -305,7 +329,6 @@ func updateUserFieldHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use UserFields.Update instead of UpdateField
 	err := client.UserFields.Update(ctx, rownd.UpdateUserFieldRequest{
-		AppID:  appID,
 		UserID: validation.UserID,
 		Field:  field,
 		Value:  req.Value,
@@ -318,7 +341,6 @@ func updateUserFieldHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch updated user data
 	user, err := client.Users.Get(ctx, rownd.GetUserRequest{
-		AppID:  appID,
 		UserID: validation.UserID,
 	})
 	if err != nil {
