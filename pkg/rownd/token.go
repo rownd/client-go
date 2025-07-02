@@ -20,6 +20,11 @@ const (
 	AuthLevelVerified   AuthLevel = "verified"
 )
 
+// TokenValidationOptions ...
+type TokenValidationOptions struct {
+	VariantID string
+}
+
 // Token ...
 type Token struct {
 	Token       *jwt.Token `json:"-"` // The parsed JWT token
@@ -100,7 +105,7 @@ func TokenFromCtx(ctx context.Context) *Token {
 
 // TokenValidator ...
 type TokenValidator interface {
-	Validate(ctx context.Context, token string) (*Token, error)
+	Validate(ctx context.Context, token string, opts *TokenValidationOptions) (*Token, error)
 }
 
 type tokenValidator struct {
@@ -108,7 +113,7 @@ type tokenValidator struct {
 }
 
 // Validate ...
-func (c *tokenValidator) Validate(ctx context.Context, token string) (*Token, error) {
+func (c *tokenValidator) Validate(ctx context.Context, token string, opts *TokenValidationOptions) (*Token, error) {
 	if token == "" {
 		return nil, NewError(ErrAuthentication, "invalid token", nil)
 	}
@@ -175,6 +180,21 @@ func (c *tokenValidator) Validate(ctx context.Context, token string) (*Token, er
 		return nil, NewError(ErrAuthentication, "invalid token audience", nil)
 	}
 
+	// Add variant validation if specified
+	if opts != nil && opts.VariantID != "" {
+		expectedVariantAud := fmt.Sprintf("app_variant:%s", opts.VariantID)
+		hasValidVariant := false
+		for _, aud := range claims.Aud {
+			if aud == expectedVariantAud {
+				hasValidVariant = true
+				break
+			}
+		}
+		if !hasValidVariant {
+			return nil, NewError(ErrAuthentication, "invalid token variant audience", nil)
+		}
+	}
+
 	r := &Token{
 		Token:       parsedToken,
 		Claims:      *claims,
@@ -186,9 +206,9 @@ func (c *tokenValidator) Validate(ctx context.Context, token string) (*Token, er
 }
 
 // Add this method to expose token validation on the Client
-func (c *Client) ValidateToken(ctx context.Context, token string) (*Token, error) {
+func (c *Client) ValidateToken(ctx context.Context, token string, opts *TokenValidationOptions) (*Token, error) {
 	validator := &tokenValidator{Client: c}
-	return validator.Validate(ctx, token)
+	return validator.Validate(ctx, token, opts)
 }
 
 // Add JWKS types

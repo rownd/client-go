@@ -19,7 +19,8 @@ type (
 type Handler struct {
 	Validator      rownd.TokenValidator
 	TokenExtractor TokenExtractor
-	ErrorHandler   func(w http.ResponseWriter, r *http.Request, err error)
+	ErrorHandler   ErrorHandler
+	ValidationOpts *rownd.TokenValidationOptions
 }
 
 func NewHandler(validator rownd.TokenValidator, opts ...HandlerOption) (*Handler, error) {

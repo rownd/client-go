@@ -1,7 +1,7 @@
 
 ```bash
-git clone https://github.com/yourusername/rownd-test.git
-cd rownd-test
+git clone https://github.com/rownd/client-go.git
+cd client-go/examples/rownd-test
 ```
 
 2. Create a `.env` file in the project root:

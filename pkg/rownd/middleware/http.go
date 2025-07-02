@@ -18,7 +18,8 @@ func WithAuthentication(handler Handler) func(next http.Handler) http.Handler {
 			}
 
 			ctx := r.Context()
-			validated, err := handler.Validator.Validate(ctx, token)
+			// Pass validation options to Validate
+			validated, err := handler.Validator.Validate(ctx, token, handler.ValidationOpts)
 			if err != nil {
 				handler.ErrorHandler(w, r, errors.New("Forbidden"))
 				return
