@@ -171,4 +171,118 @@ func TestRowndUserOperations(t *testing.T) {
 		})
 		assert.NoError(t, err)
 	})
+
+	t.Run("user attributes operations", func(t *testing.T) {
+		// Create a user for attribute testing
+		userData := map[string]interface{}{
+			"email":      fmt.Sprintf("test.attributes.%d@example.com", time.Now().UnixNano()),
+			"first_name": "Attribute",
+			"last_name":  "Test",
+		}
+
+		user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
+			UserID: "__UUID__",
+			Data:   userData,
+			Attributes: map[string][]string{
+				"rownd:app_variants": {"variant_1", "variant_2"},
+			},
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, user)
+		assert.NotEmpty(t, user.ID)
+		testUserID := user.ID
+
+		// Test GetAttributes method
+		attrs := user.GetAttributes()
+		assert.NotNil(t, attrs)
+		assert.Equal(t, []string{"variant_1", "variant_2"}, attrs["rownd:app_variants"])
+
+		// Test AddAttributes
+		t.Run("add attributes", func(t *testing.T) {
+			user, err := client.Users.AddAttributes(ctx, rownd.AddAttributesRequest{
+				UserID: testUserID,
+				Attributes: map[string][]string{
+					"myapp:subscription_status": {"active"},
+					"myapp:loyalty_points":      {"100"},
+				},
+			})
+			assert.NoError(t, err)
+			assert.NotNil(t, user)
+
+			// Verify attributes were added
+			attrs := user.GetAttributes()
+			assert.Equal(t, []string{"variant_1", "variant_2"}, attrs["rownd:app_variants"])
+			assert.Equal(t, []string{"active"}, attrs["myapp:subscription_status"])
+			assert.Equal(t, []string{"100"}, attrs["myapp:loyalty_points"])
+		})
+
+		// Test updating existing attributes
+		t.Run("update existing attributes", func(t *testing.T) {
+			user, err := client.Users.AddAttributes(ctx, rownd.AddAttributesRequest{
+				UserID: testUserID,
+				Attributes: map[string][]string{
+					"myapp:loyalty_points": {"200"},  // Update existing
+					"myapp:tier":           {"gold"}, // Add new
+				},
+			})
+			assert.NoError(t, err)
+			assert.NotNil(t, user)
+
+			attrs := user.GetAttributes()
+			assert.Equal(t, []string{"200"}, attrs["myapp:loyalty_points"])
+			assert.Equal(t, []string{"gold"}, attrs["myapp:tier"])
+		})
+
+		// Test DeleteAttributes
+		t.Run("delete attributes", func(t *testing.T) {
+			user, err := client.Users.DeleteAttributes(ctx, rownd.DeleteAttributesRequest{
+				UserID:        testUserID,
+				AttributeKeys: []string{"myapp:subscription_status", "myapp:tier"},
+			})
+			assert.NoError(t, err)
+			assert.NotNil(t, user)
+
+			// Verify attributes were deleted
+			attrs := user.GetAttributes()
+			assert.Equal(t, []string{"variant_1", "variant_2"}, attrs["rownd:app_variants"])
+			assert.Equal(t, []string{"200"}, attrs["myapp:loyalty_points"])
+			_, hasSubscription := attrs["myapp:subscription_status"]
+			assert.False(t, hasSubscription)
+			_, hasTier := attrs["myapp:tier"]
+			assert.False(t, hasTier)
+		})
+
+		// Test validation errors
+		t.Run("validation errors", func(t *testing.T) {
+			// Test AddAttributes without UserID
+			_, err := client.Users.AddAttributes(ctx, rownd.AddAttributesRequest{
+				Attributes: map[string][]string{"test": {"value"}},
+			})
+			assert.Error(t, err)
+
+			// Test AddAttributes without attributes
+			_, err = client.Users.AddAttributes(ctx, rownd.AddAttributesRequest{
+				UserID: testUserID,
+			})
+			assert.Error(t, err)
+
+			// Test DeleteAttributes without UserID
+			_, err = client.Users.DeleteAttributes(ctx, rownd.DeleteAttributesRequest{
+				AttributeKeys: []string{"test"},
+			})
+			assert.Error(t, err)
+
+			// Test DeleteAttributes without keys
+			_, err = client.Users.DeleteAttributes(ctx, rownd.DeleteAttributesRequest{
+				UserID: testUserID,
+			})
+			assert.Error(t, err)
+		})
+
+		// Cleanup
+		err = client.Users.Delete(ctx, rownd.DeleteUserRequest{
+			UserID: testUserID,
+		})
+		assert.NoError(t, err)
+	})
 }

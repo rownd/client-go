@@ -262,6 +262,60 @@ err := client.Users.Delete(ctx, rownd.DeleteUserRequest{
 })
 ```
 
+### User Attributes
+
+User attributes are key-value pairs where values are arrays of strings. They can be used to store additional metadata like app variants, subscription status, or custom application data.
+
+```go
+// Create user with attributes
+user, err := client.Users.CreateOrUpdate(ctx, rownd.CreateOrUpdateUserRequest{
+    UserID: "__UUID__",
+    Data: map[string]interface{}{
+        "email": "user@example.com",
+        "first_name": "John",
+    },
+    Attributes: map[string][]string{
+        "rownd:app_variants": {"variant_1", "variant_2"},
+        "myapp:subscription_status": {"active"},
+        "myapp:loyalty_points": {"100"},
+    },
+})
+
+// Get user attributes
+attrs := user.GetAttributes()
+// attrs = {
+//     "rownd:app_variants": ["variant_1", "variant_2"],
+//     "myapp:subscription_status": ["active"],
+//     "myapp:loyalty_points": ["100"]
+// }
+
+// Add or update attributes (using PATCH)
+user, err = client.Users.AddAttributes(ctx, rownd.AddAttributesRequest{
+    UserID: "user_id",
+    Attributes: map[string][]string{
+        "myapp:loyalty_points": {"200"},  // Updates existing
+        "myapp:tier": {"gold"},           // Adds new
+    },
+})
+
+// Delete attributes (requires GET + PUT)
+user, err = client.Users.DeleteAttributes(ctx, rownd.DeleteAttributesRequest{
+    UserID: "user_id",
+    AttributeKeys: []string{"myapp:subscription_status", "myapp:tier"},
+})
+
+// You can also manage attributes directly via Patch/CreateOrUpdate
+user, err = client.Users.Patch(ctx, rownd.PatchUserRequest{
+    UserID: "user_id",
+    Data: map[string]any{
+        "email": "newemail@example.com",
+    },
+    Attributes: map[string][]string{
+        "myapp:new_attribute": {"value1", "value2"},
+    },
+})
+```
+
 ## Group Management
 
 ### Groups

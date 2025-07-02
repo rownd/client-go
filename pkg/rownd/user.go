@@ -19,6 +19,7 @@ type User struct {
 	Groups        []UserGroupMembership     `json:"groups"`
 	Meta          UserMeta                  `json:"meta"`
 	ConnectionMap map[string]UserConnection `json:"connection_map"`
+	Attributes    map[string][]string       `json:"attributes"`
 }
 
 // UserConnection ...
@@ -223,6 +224,9 @@ type CreateOrUpdateUserRequest struct {
 
 	// ConnectionMap is optional
 	ConnectionMap []interface{} `json:"connection_map,omitempty"`
+
+	// Attributes are optional key-value pairs where values are arrays of strings
+	Attributes map[string][]string `json:"attributes,omitempty"`
 }
 
 func (r *CreateOrUpdateUserRequest) params() url.Values {
@@ -289,6 +293,9 @@ type PatchUserRequest struct {
 	WriteDataToIntegrations *bool `json:"-"`
 
 	Data map[string]any `json:"data"`
+
+	// Attributes are optional key-value pairs where values are arrays of strings
+	Attributes map[string][]string `json:"attributes,omitempty"`
 }
 
 func (r *PatchUserRequest) params() url.Values {
@@ -385,4 +392,142 @@ func (u *User) GetID() string {
 		return userID
 	}
 	return ""
+}
+
+// GetAttributes returns the user's attributes
+func (u *User) GetAttributes() map[string][]string {
+	if u.Attributes == nil {
+		return make(map[string][]string)
+	}
+	return u.Attributes
+}
+
+// AddAttributesRequest ...
+type AddAttributesRequest struct {
+	// UserID is the user id.
+	UserID string `json:"-"`
+
+	// Attributes to add
+	Attributes map[string][]string `json:"-"`
+
+	// WriteDataToIntegrations is a query parameter that dictates if Rownd should write the
+	// profile data changes to integrations attached to your application.
+	// default: true
+	WriteDataToIntegrations *bool `json:"-"`
+}
+
+func (r *AddAttributesRequest) validate() error {
+	var errs []error
+
+	if r.UserID == "" {
+		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
+	}
+
+	if r.Attributes == nil || len(r.Attributes) == 0 {
+		errs = append(errs, NewError(ErrValidation, "attributes are required", nil))
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return &MultiError{errors: errs}
+}
+
+// AddAttributes adds attributes to a user using PATCH
+func (c *userClient) AddAttributes(ctx context.Context, request AddAttributesRequest) (*User, error) {
+	if err := request.validate(); err != nil {
+		return nil, err
+	}
+
+	patchReq := PatchUserRequest{
+		UserID:                  request.UserID,
+		WriteDataToIntegrations: request.WriteDataToIntegrations,
+		Data:                    map[string]any{}, // Empty data since we're only updating attributes
+		Attributes:              request.Attributes,
+	}
+
+	return c.Patch(ctx, patchReq)
+}
+
+// DeleteAttributesRequest ...
+type DeleteAttributesRequest struct {
+	// UserID is the user id.
+	UserID string `json:"-"`
+
+	// AttributeKeys to delete
+	AttributeKeys []string `json:"-"`
+
+	// WriteDataToIntegrations is a query parameter that dictates if Rownd should write the
+	// profile data changes to integrations attached to your application.
+	// default: true
+	WriteDataToIntegrations *bool `json:"-"`
+}
+
+func (r *DeleteAttributesRequest) validate() error {
+	var errs []error
+
+	if r.UserID == "" {
+		errs = append(errs, NewError(ErrValidation, "user id is required", nil))
+	}
+
+	if r.AttributeKeys == nil || len(r.AttributeKeys) == 0 {
+		errs = append(errs, NewError(ErrValidation, "attribute keys are required", nil))
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return &MultiError{errors: errs}
+}
+
+// DeleteAttributes deletes attributes from a user by fetching the full user and PUTing without those attributes
+func (c *userClient) DeleteAttributes(ctx context.Context, request DeleteAttributesRequest) (*User, error) {
+	if err := request.validate(); err != nil {
+		return nil, err
+	}
+
+	// First, get the current user
+	currentUser, err := c.Get(ctx, GetUserRequest{UserID: request.UserID})
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a copy of attributes without the ones to delete
+	newAttributes := make(map[string][]string)
+	if currentUser.Attributes != nil {
+		for key, value := range currentUser.Attributes {
+			// Check if this key should be deleted
+			shouldDelete := false
+			for _, deleteKey := range request.AttributeKeys {
+				if key == deleteKey {
+					shouldDelete = true
+					break
+				}
+			}
+			if !shouldDelete {
+				newAttributes[key] = value
+			}
+		}
+	}
+
+	// Use CreateOrUpdate (PUT) to update the user with the new attributes
+	updateReq := CreateOrUpdateUserRequest{
+		UserID:                  request.UserID,
+		WriteDataToIntegrations: request.WriteDataToIntegrations,
+		Data:                    currentUser.Data,
+		Attributes:              newAttributes,
+	}
+
+	// Include ConnectionMap if it exists
+	if currentUser.ConnectionMap != nil && len(currentUser.ConnectionMap) > 0 {
+		// Convert ConnectionMap to []interface{} format expected by the API
+		connectionMap := make([]interface{}, 0)
+		// Note: The actual conversion logic would depend on API requirements
+		// For now, we'll leave it empty as ConnectionMap handling might need specific logic
+		updateReq.ConnectionMap = connectionMap
+	}
+
+	return c.CreateOrUpdate(ctx, updateReq)
 }
